@@ -19,7 +19,13 @@
 
 <script>
 export default {
-    name: 'ErrorKeys',
+    name: 'KeysPad',
+    props: {
+        isInputAllowed: {
+            type: Boolean,
+            required: true
+        }
+    },
     data() {
         return {
             activeKey: null
@@ -37,11 +43,15 @@ export default {
         }
     },
     methods: {
+        sendInput() {
+            // Your logic to send input to the backend here
+            this.$emit('inputSent');
+        },
         onKeyDown(event) {
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
                 const key = event.key;
                 this.activeKey = key;
-
+                this.sendInput();
                 fetch('http://localhost:5000/key_press', {
                     method: 'POST',
                     headers: {
