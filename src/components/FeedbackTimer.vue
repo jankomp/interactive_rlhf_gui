@@ -1,6 +1,7 @@
 <template>
     <div>
         Time elapsed: {{ (timeElapsed / 1000).toFixed(2) }} seconds
+        <!-- <button @click="togglePause">{{ paused ? '▶' : '||' }}</button> -->
     </div>
 </template>
 

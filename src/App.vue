@@ -5,7 +5,8 @@
       <p>{{ blockingMessage }}</p>
     </div>
     <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @changeBlockingMessage="handleChangeBlockingMessage" />
-    <KeyPad :isInputAllowed="isInputAllowed" @inputSent="handleInputSent" />
+    <KeyPad :isInputAllowed="isInputAllowed" @inputSent="handleInputSent" @feedbackCountUpdated="handleFeedbackCountUpdated"/>
+    <FeedbackCounter class="feedback-counter" :givenFeedbacks="feedbackCount" />
   </div>
 </template>
 
@@ -13,6 +14,7 @@
 import KeyPad from './components/KeyPad.vue'
 import VideoPlayer from './components/VideoPlayer.vue'
 import FeedbackTimer from './components/FeedbackTimer.vue'
+import FeedbackCounter from './components/FeedbackCounter.vue';
 
 export default {
   name: 'App',
@@ -20,11 +22,13 @@ export default {
     FeedbackTimer,
     VideoPlayer,
     KeyPad,
+    FeedbackCounter,
   },
   data() {
     return {
       isInputAllowed: false,
       blockingMessage: 'Waiting for videos...',
+      feedbackCount: 0
     }
   },
   methods: {
@@ -37,7 +41,10 @@ export default {
     },
     handleChangeBlockingMessage(message) {
       this.blockingMessage = message;
-    }
+    },
+    handleFeedbackCountUpdated(feedbackCount) {
+      this.feedbackCount = feedbackCount;
+    },
   }
 }
 </script>
@@ -46,6 +53,13 @@ export default {
 .timer {
   position: fixed;
   top: 10px;
+  right: 10px;
+  z-index: 1001;
+}
+
+.feedback-counter {
+  position: fixed;
+  bottom: 10px;
   right: 10px;
   z-index: 1001;
 }
