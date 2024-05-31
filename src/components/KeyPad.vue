@@ -19,7 +19,7 @@
 
 <script>
 export default {
-    name: 'KeysPad',
+    name: 'KeyPad',
     props: {
         isInputAllowed: {
             type: Boolean,

@@ -13,12 +13,13 @@ export default {
     return {
       video1: '',
       video2: '',
-      lastEventData: null
+      lastEventData: null,
+      feedbackReceived: false
     };
   },
   methods: {
     receiveVideo() {
-      // Your logic to receive video from the backend here
+      this.feedbackReceived = false;
       this.$emit('videoReceived');
     },
     changeBlockingMessage(message) {
