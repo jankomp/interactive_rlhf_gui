@@ -1,10 +1,10 @@
 <template>
   <div id="app">
-    <FeedbackTimer class="timer" :isInputAllowed="isInputAllowed"/>
+    <FeedbackTimer class="timer" :isInputAllowed="isInputAllowed" @pauseTimerEvent="handlePauseTimer" @resumeTimerEvent="handleResumeTimer"/>
     <div v-if="!isInputAllowed" class="overlay">
       <p>{{ blockingMessage }}</p>
     </div>
-    <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @changeBlockingMessage="handleChangeBlockingMessage" />
+    <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @noVideoReceived="handleNoVideoReceived" @changeBlockingMessage="handleChangeBlockingMessage" />
     <KeyPad :isInputAllowed="isInputAllowed" @inputSent="handleInputSent" @feedbackCountUpdated="handleFeedbackCountUpdated"/>
     <FeedbackCounter ref="feedbackCounter" class="feedback-counter" :givenFeedbacks="feedbackCount" />
   </div>
@@ -39,6 +39,9 @@ export default {
     handleVideoReceived() {
       this.isInputAllowed = true;
     },
+    handleNoVideoReceived() {
+      this.isInputAllowed = false;
+    },
     handleChangeBlockingMessage(message) {
       if (this.feedbackCount !== this.$refs.feedbackCounter.totalFeedbacks) {
         this.blockingMessage = message;
@@ -49,6 +52,16 @@ export default {
       if (this.feedbackCount === this.$refs.feedbackCounter.totalFeedbacks) {
         this.blockingMessage = 'Thank you for your feedbacks!';
       }
+    },
+    handlePauseTimer() {
+      this.blockingMessage = 'Paused';
+      this.isInputAllowed = false;
+      this.$refs.videoPlayer.pauseStream();
+    },
+    handleResumeTimer() {
+      this.blockingMessage = 'Waiting for videos...';
+      this.isInputAllowed = true;
+      this.$refs.videoPlayer.resumeStream();
     },
   }
 }

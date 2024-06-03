@@ -48,6 +48,9 @@ export default {
             this.$emit('inputSent');
         },
         onKeyDown(event) {
+            if (!this.isInputAllowed) {
+                return;
+            }
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
                 const key = event.key;
                 this.activeKey = key;

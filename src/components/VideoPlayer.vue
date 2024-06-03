@@ -1,9 +1,9 @@
 <template>
   <div id="app" style="display: flex; justify-content: center; gap: 20px;">
-    <video ref="video1" controls :src="video1" width="400" @ended="waitAndLoop" @loadedmetadata="setPlaybackRate"
-      autoplay muted></video>
-    <video ref="video2" controls :src="video2" width="400" @ended="waitAndLoop" @loadedmetadata="setPlaybackRate"
-      autoplay muted></video>
+    <video ref="video1" controls :src="video1" width="400" @ended="waitAndLoop" @loadedmetadata="setPlaybackRate" autoplay
+      muted></video>
+    <video ref="video2" controls :src="video2" width="400" @ended="waitAndLoop" @loadedmetadata="setPlaybackRate" autoplay
+      muted></video>
   </div>
 </template>
 
@@ -14,13 +14,17 @@ export default {
       video1: '',
       video2: '',
       lastEventData: null,
-      feedbackReceived: false
+      feedbackReceived: false,
+      eventSource: null
     };
   },
   methods: {
     receiveVideo() {
       this.feedbackReceived = false;
       this.$emit('videoReceived');
+    },
+    noVideoReceived() {
+      this.$emit('noVideoReceived');
     },
     changeBlockingMessage(message) {
       this.$emit('changeBlockingMessage', message);
@@ -36,6 +40,11 @@ export default {
           this.receiveVideo();
         } else {
           this.changeBlockingMessage('Please wait while we generate new behaviors...');
+        }
+      } else {
+        if (videos[0] === "" && videos[1] === "") {
+          this.changeBlockingMessage('Please wait while we generate new behaviors...');
+          this.noVideoReceived();
         }
       }
     },
@@ -56,11 +65,22 @@ export default {
     },
     setPlaybackRate(event) {
       event.target.playbackRate = 0.5;
-    }
+    },
+    pauseStream() {
+      if (this.eventSource) {
+        this.eventSource.close();
+        this.eventSource = null;
+      }
+    },
+    resumeStream() {
+      if (!this.eventSource) {
+        this.eventSource = new EventSource('http://localhost:5000/stream');
+        this.eventSource.onmessage = this.handleEvent;
+      }
+    },
   },
   mounted() {
-    const eventSource = new EventSource('http://localhost:5000/stream');
-    eventSource.onmessage = this.handleEvent;
+    this.resumeStream();
   }
 };
 </script>
