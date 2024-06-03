@@ -61,7 +61,6 @@ export default {
                 })
                     .then(response => response.json())
                     .then(data => {
-                        console.log(data.feedback_count);
                         this.$emit('feedbackCountUpdated', data.feedback_count);
                     });
             }

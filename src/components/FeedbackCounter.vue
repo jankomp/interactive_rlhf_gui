@@ -24,6 +24,11 @@ export default {
       .then(data => {
         this.totalFeedbacks = data.total_feedbacks;
       });
+  },
+  watch: {
+    totalFeedbacks() {
+      this.$emit('totalFeedbacksUpdated', this.totalFeedbacks);
+    }
   }
 }
 </script>

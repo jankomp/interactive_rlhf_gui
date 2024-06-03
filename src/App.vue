@@ -6,7 +6,7 @@
     </div>
     <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @changeBlockingMessage="handleChangeBlockingMessage" />
     <KeyPad :isInputAllowed="isInputAllowed" @inputSent="handleInputSent" @feedbackCountUpdated="handleFeedbackCountUpdated"/>
-    <FeedbackCounter class="feedback-counter" :givenFeedbacks="feedbackCount" />
+    <FeedbackCounter ref="feedbackCounter" class="feedback-counter" :givenFeedbacks="feedbackCount" />
   </div>
 </template>
 
@@ -40,10 +40,15 @@ export default {
       this.isInputAllowed = true;
     },
     handleChangeBlockingMessage(message) {
-      this.blockingMessage = message;
+      if (this.feedbackCount !== this.$refs.feedbackCounter.totalFeedbacks) {
+        this.blockingMessage = message;
+      }
     },
     handleFeedbackCountUpdated(feedbackCount) {
       this.feedbackCount = feedbackCount;
+      if (this.feedbackCount === this.$refs.feedbackCounter.totalFeedbacks) {
+        this.blockingMessage = 'Thank you for your feedbacks!';
+      }
     },
   }
 }
