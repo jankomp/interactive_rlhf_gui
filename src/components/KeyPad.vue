@@ -1,16 +1,16 @@
 <template>
     <div class="keypad">
-        <div class="key top" :class="{ active: activeKey === 'ArrowUp' }">
+        <div class="key top" :class="{ active: activeKey === 'ArrowUp' }" @click="onKeyClick('ArrowUp')" title="Equal">
             <div class="triangle up"></div>
         </div>
         <div class="key-row">
-            <div class="key" :class="{ active: activeKey === 'ArrowLeft' }">
+            <div class="key" :class="{ active: activeKey === 'ArrowLeft' }" @click="onKeyClick('ArrowLeft')" title="Left">
                 <div class="triangle left"></div>
             </div>
-            <div class="key" :class="{ active: activeKey === 'ArrowDown' }">
+            <div class="key" :class="{ active: activeKey === 'ArrowDown' }" @click="onKeyClick('ArrowDown')" title="Skip">
                 <div class="triangle down"></div>
             </div>
-            <div class="key" :class="{ active: activeKey === 'ArrowRight' }">
+            <div class="key" :class="{ active: activeKey === 'ArrowRight' }" @click="onKeyClick('ArrowRight')" title="Right">
                 <div class="triangle right"></div>
             </div>
         </div>
@@ -70,7 +70,28 @@ export default {
         },
         onKeyUp() {
             this.activeKey = null;
-        }
+        },
+        onKeyClick(key) {
+            if (!this.isInputAllowed) {
+                return;
+            }
+            this.activeKey = key;
+            this.sendInput();
+            fetch('http://localhost:5000/key_press', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ key })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    this.$emit('feedbackCountUpdated', data.feedback_count);
+                });
+            setTimeout(() => {
+                this.activeKey = null;
+            }, 250);
+        },
     }
 }
 </script>
