@@ -9,9 +9,10 @@ import * as d3 from 'd3';
 
 export default {
     data() {
+        const size = window.innerHeight *0.8;
         return {
-            width: 500,
-            height: 500,
+            width: size,
+            height: size,
             margin: { top: 20, right: 20, bottom: 30, left: 40 },
             lastEventId: null,
             data: null,
@@ -20,6 +21,18 @@ export default {
         };
     },
     methods: {
+        group1Updated() {
+            this.$emit('group1Updated', this.group1);
+        },
+        group2Updated() {
+            this.$emit('group2Updated', this.group2);
+        },
+        fragmentsReceived() {
+            this.$emit('fragmentsReceived');
+        },
+        feedbackComplete() {
+            this.$emit('feedbackComplete');
+        },
         handleEvent(event) {
             const currentEventId = JSON.parse(event.data);
             console.log(currentEventId);
@@ -42,6 +55,10 @@ export default {
                     if (data && data.length > 0) {
                         this.data = data;
                         this.createChart(data);
+                        this.fragmentsReceived();
+                    } else if (data && data.length === 0) {
+                        console.log('No data received');
+                        this.feedbackComplete();
                     }
                 })
                 .catch(error => {
@@ -119,6 +136,12 @@ export default {
                                 otherGroup.splice(indexInOtherGroup, 1);
                             }
                             group.push(d);
+
+                            if (event.sourceEvent.button === 0) {
+                                this.group1Updated();
+                            } else {
+                                this.group2Updated();
+                            }
                         }
                     });
                 });

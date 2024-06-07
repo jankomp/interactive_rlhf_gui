@@ -1,43 +1,79 @@
 <template>
   <div id="app">
-    <EmbeddingView v-if="$feedback === 'group'" />
-    <FeedbackTimer class="timer" :isInputAllowed="isInputAllowed" @pauseTimerEvent="handlePauseTimer" @resumeTimerEvent="handleResumeTimer"/>
+
+    <div class="groupwise-comparison" v-if="$feedback === 'group'">
+      <EmbeddingView class="embedding-view" @group1Updated="handleGroup1Updated" @group2Updated="handleGroup2Updated"
+        @fragmentsReceived="handleVideoReceived" @feedbackComplete="handleInputSent" />
+      <VideoGroupPlayer class="video-group-player" :videoGroup="group1" />
+      <GroupKeyPad @keyPressed="handleGroupKeyPressed" :isInputAllowed="isInputAllowed"/>
+      <VideoGroupPlayer class="video-group-player" :videoGroup="group2" />
+    </div>
+    <div class="pairwise-comparison" v-if="$feedback === 'pairwise'">
+      <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @noVideoReceived="handleNoVideoReceived"
+        @changeBlockingMessage="handleChangeBlockingMessage" />
+      <KeyPad :isInputAllowed="isInputAllowed" @inputSent="handleInputSent"
+        @feedbackCountUpdated="handleFeedbackCountUpdated" />
+    </div>
     <div v-if="!isInputAllowed" class="overlay">
       <p>{{ blockingMessage }}</p>
     </div>
-    <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @noVideoReceived="handleNoVideoReceived" @changeBlockingMessage="handleChangeBlockingMessage" />
-    <KeyPad :isInputAllowed="isInputAllowed" @inputSent="handleInputSent" @feedbackCountUpdated="handleFeedbackCountUpdated"/>
+    <FeedbackTimer class="timer" :isInputAllowed="isInputAllowed" @pauseTimerEvent="handlePauseTimer"
+      @resumeTimerEvent="handleResumeTimer" />
     <FeedbackCounter ref="feedbackCounter" class="feedback-counter" :givenFeedbacks="feedbackCount" />
   </div>
 </template>
 
 <script>
 import EmbeddingView from './components/EmbeddingView.vue'
+import GroupKeyPad from './components/GroupKeyPad.vue'
+import VideoGroupPlayer from './components/VideoGroupPlayer.vue'
 import KeyPad from './components/KeyPad.vue'
 import VideoPlayer from './components/VideoPlayer.vue'
 import FeedbackTimer from './components/FeedbackTimer.vue'
 import FeedbackCounter from './components/FeedbackCounter.vue';
+import axios from 'axios';
 
 export default {
   name: 'App',
   components: {
     EmbeddingView,
-    FeedbackTimer,
-    VideoPlayer,
+    GroupKeyPad,
+    VideoGroupPlayer,
     KeyPad,
+    VideoPlayer,
+    FeedbackTimer,
     FeedbackCounter,
   },
   data() {
     return {
       isInputAllowed: false,
       blockingMessage: 'Waiting for videos...',
-      feedbackCount: 0
+      feedbackCount: 0,
+      group1: [],
+      group2: [],
     }
   },
   methods: {
+    handleGroupKeyPressed(key) {
+      const data = {
+        group1: this.group1.map(video => video.id),
+        group2: this.group2.map(video => video.id),
+        preference: key,
+      };
+
+      axios.post('http://localhost:5000/preference', data)
+        .then(response => {
+          console.log('Response:', response.data);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+    },
     handleInputSent() {
       this.isInputAllowed = false;
-      this.$refs.videoPlayer.feedbackReceived = true;
+      if (this.$refs.videoPlayer) {
+        this.$refs.videoPlayer.feedbackReceived = true;
+      }
     },
     handleVideoReceived() {
       this.isInputAllowed = true;
@@ -59,18 +95,41 @@ export default {
     handlePauseTimer() {
       this.blockingMessage = 'Paused';
       this.isInputAllowed = false;
-      this.$refs.videoPlayer.pauseStream();
+      if (this.$refs.videoPlayer) {
+        this.$refs.videoPlayer.pauseStream();
+      }
     },
     handleResumeTimer() {
       this.blockingMessage = 'Waiting for videos...';
       this.isInputAllowed = true;
-      this.$refs.videoPlayer.resumeStream();
+      if (this.$refs.videoPlayer) {
+        this.$refs.videoPlayer.resumeStream();
+      }
+    },
+    handleGroup1Updated(group1) {
+      this.group1 = group1;
+      console.log('Group 1 updated:', group1);
+    },
+    handleGroup2Updated(group2) {
+      this.group2 = group2;
+      console.log('Group 2 updated:', group2);
     },
   },
 }
 </script>
 
 <style scoped>
+.embedding-view {
+    min-height: 80vh;
+  }
+.groupwise-comparison {
+  display: flex;
+}
+
+.video-group-player {
+  min-width: 400px;
+}
+
 .timer {
   position: fixed;
   top: 10px;
@@ -84,6 +143,7 @@ export default {
   right: 10px;
   z-index: 1001;
 }
+
 .overlay {
   position: fixed;
   top: 0;

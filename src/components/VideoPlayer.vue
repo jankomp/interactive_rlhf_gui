@@ -61,9 +61,8 @@ export default {
         console.error('Error while loading the video');
       };
       setTimeout(() => {
-        if (video.src !== '') {
-          video.load();
-        }
+        video.currentTime = 0; // Reset the video to the beginning
+        video.play();
       }, 1000);
     },
     setPlaybackRate(event) {
