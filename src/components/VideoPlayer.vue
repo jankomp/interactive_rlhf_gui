@@ -31,6 +31,9 @@ export default {
     },
     handleEvent(event) {
       const videos = JSON.parse(event.data);
+      if (videos === null) {
+        return;
+      }
       if (videos.toString() !== this.lastEventData) {
         this.video1 = `http://localhost:5000/videos/${videos[0]}`;
         this.video2 = `http://localhost:5000/videos/${videos[1]}`;

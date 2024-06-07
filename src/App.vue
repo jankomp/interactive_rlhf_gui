@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <EmbeddingView v-if="$feedback === 'group'" />
     <FeedbackTimer class="timer" :isInputAllowed="isInputAllowed" @pauseTimerEvent="handlePauseTimer" @resumeTimerEvent="handleResumeTimer"/>
     <div v-if="!isInputAllowed" class="overlay">
       <p>{{ blockingMessage }}</p>
@@ -11,6 +12,7 @@
 </template>
 
 <script>
+import EmbeddingView from './components/EmbeddingView.vue'
 import KeyPad from './components/KeyPad.vue'
 import VideoPlayer from './components/VideoPlayer.vue'
 import FeedbackTimer from './components/FeedbackTimer.vue'
@@ -19,6 +21,7 @@ import FeedbackCounter from './components/FeedbackCounter.vue';
 export default {
   name: 'App',
   components: {
+    EmbeddingView,
     FeedbackTimer,
     VideoPlayer,
     KeyPad,
@@ -63,7 +66,7 @@ export default {
       this.isInputAllowed = true;
       this.$refs.videoPlayer.resumeStream();
     },
-  }
+  },
 }
 </script>
 

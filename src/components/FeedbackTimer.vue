@@ -31,7 +31,7 @@ export default {
         pauseTimer() {
             clearInterval(this.timer);
             this.timer = null;
-            if (this.startTime !== null && this.startTime !== 0) {
+            if (this.startTime !== null && this.startTime !== 0 && this.isInputAllowed) {
                 this.timeElapsed = Date.now() - this.startTime;
             }
             if (this.paused) {
