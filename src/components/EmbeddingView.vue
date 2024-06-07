@@ -14,18 +14,21 @@ export default {
             height: 500,
             margin: { top: 20, right: 20, bottom: 30, left: 40 },
             lastEventId: null,
+            data: null,
+            group1: [],
+            group2: [],
         };
     },
     methods: {
         handleEvent(event) {
-                const currentEventId = JSON.parse(event.data);
-                console.log(currentEventId);
-                if (currentEventId === null || currentEventId === '') {
-                    d3.select('#scatterPlot').select('svg').remove();
-                } else if (currentEventId !== this.lastEventId) {
-                    this.lastEventId = currentEventId;
-                    this.fetchData();
-                }
+            const currentEventId = JSON.parse(event.data);
+            console.log(currentEventId);
+            if (currentEventId === null || currentEventId === '') {
+                d3.select('#scatterPlot').select('svg').remove();
+            } else if (currentEventId !== this.lastEventId) {
+                this.lastEventId = currentEventId;
+                this.fetchData();
+            }
         },
         fetchData() {
             fetch('http://localhost:5000/fragments')
@@ -37,6 +40,7 @@ export default {
                 })
                 .then(data => {
                     if (data && data.length > 0) {
+                        this.data = data;
                         this.createChart(data);
                     }
                 })
@@ -44,7 +48,7 @@ export default {
                     console.error('Error:', error);
                 });
         },
-        createChart(data) {
+        createChart() {
             d3.select('#scatterPlot').select('svg').remove();
 
             const svg = d3.select('#scatterPlot')
@@ -55,20 +59,29 @@ export default {
                 .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
             const xScale = d3.scaleLinear()
-                .domain(d3.extent(data, d => d.x))
+                .domain(d3.extent(this.data, d => d.x))
                 .range([0, this.width]);
 
             const yScale = d3.scaleLinear()
-                .domain(d3.extent(data, d => d.y))
+                .domain(d3.extent(this.data, d => d.y))
                 .range([this.height, 0]);
 
             svg.selectAll('.dot')
-                .data(data)
+                .data(this.data)
                 .enter().append('circle')
-                .attr('class', 'dot')
+                .attr('class', d => {
+                    if (this.group1.find(item => item.id === d.id)) {
+                        return 'dot group1';
+                    } else if (this.group2.find(item => item.id === d.id)) {
+                        return 'dot group2';
+                    } else {
+                        return 'dot';
+                    }
+                })
                 .attr('r', 3.5)
                 .attr('cx', d => xScale(d.x))
-                .attr('cy', d => yScale(d.y));
+                .attr('cy', d => yScale(d.y))
+                .attr('data-id', d => d.id);
 
             svg.append('g')
                 .attr('transform', `translate(0,${this.height})`)
@@ -76,6 +89,44 @@ export default {
 
             svg.append('g')
                 .call(d3.axisLeft(yScale));
+
+            // Create a single brush
+            const brush = d3.brush()
+                .extent([[0, 0], [this.width, this.height]])
+                .filter((event) => event.button === 0 || event.button === 2)
+                .on("start", (event) => {
+                    // Set the fill style of the brush's selection rectangle based on the mouse button
+                    const selectionColor = event.sourceEvent.button === 0 ? 'blue' : 'orange';
+                    d3.select('.brush .selection').style('fill', selectionColor);
+                })
+                .on("end", (event) => {
+                    if (!event.sourceEvent) return; // Only transition after input.
+                    if (!event.selection) return; // Ignore empty selections.
+
+                    const [[x0, y0], [x1, y1]] = event.selection;
+
+                    const group = event.sourceEvent.button === 0 ? this.group1 : this.group2;
+                    const otherGroup = event.sourceEvent.button === 0 ? this.group2 : this.group1;
+
+                    if (!event.sourceEvent.ctrlKey) {
+                        group.splice(0, group.length);
+                    }
+
+                    this.data.forEach(d => {
+                        if (x0 <= xScale(d.x) && xScale(d.x) <= x1 && y0 <= yScale(d.y) && yScale(d.y) <= y1) {
+                            const indexInOtherGroup = otherGroup.findIndex(item => item.id === d.id);
+                            if (indexInOtherGroup !== -1) {
+                                otherGroup.splice(indexInOtherGroup, 1);
+                            }
+                            group.push(d);
+                        }
+                    });
+                });
+
+            // Add the brush to the SVG
+            svg.append("g")
+                .attr("class", "brush")
+                .call(brush);
         },
         resumeStream() {
             if (!this.eventSource) {
@@ -86,18 +137,44 @@ export default {
     },
     mounted() {
         this.resumeStream();
+        window.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+    },
+    beforeUnmount() {
+        window.removeEventListener('contextmenu', this.preventContextMenu);
+    },
+    watch: {
+        group1: {
+            handler() {
+                this.createChart();
+            },
+            deep: true
+        },
+        group2: {
+            handler() {
+                this.createChart();
+            },
+            deep: true
+        }
     },
 };
 </script>
 
-<style scoped>
+<style>
 #scatterPlot {
     font: 10px sans-serif;
 }
 
 .dot {
-    fill: #4c78a8;
-    stroke: #fff;
-    stroke-width: 1.5px;
+    fill: black;
+}
+
+.dot.group1 {
+    fill: blue;
+}
+
+.dot.group2 {
+    fill: orange;
 }
 </style>
