@@ -125,12 +125,18 @@ export default {
       if (this.$refs.videoPlayer) {
         this.$refs.videoPlayer.pauseStream();
       }
+      if (this.$refs.embeddingView) {
+        this.$refs.embeddingView.pauseStream();
+      }
     },
     handleResumeTimer() {
       this.blockingMessage = 'Waiting for videos...';
       this.isInputAllowed = true;
       if (this.$refs.videoPlayer) {
         this.$refs.videoPlayer.resumeStream();
+      }
+      if (this.$refs.embeddingView) {
+        this.$refs.embeddingView.resumeStream();
       }
     },
     handleGroup1Updated(group1) {

@@ -27,7 +27,9 @@ export default {
         updateConnections(newConnections) {
             this.connections = newConnections;
             console.log('Connections updated:', this.connections);
-            this.createChart();
+            if (Array.isArray(this.data)) {
+                this.createChart();
+            }
         },
         setGroup1(newGroup1) {
             this.group1 = newGroup1;
@@ -51,6 +53,7 @@ export default {
             const currentEventId = JSON.parse(event.data);
             if (currentEventId === null || currentEventId === '') {
                 d3.select('#scatterPlot').select('svg').remove();
+                this.feedbackComplete();
             } else if (currentEventId !== this.lastEventId) {
                 this.lastEventId = currentEventId;
                 this.fetchData();
@@ -182,7 +185,16 @@ export default {
                 .attr("class", "brush")
                 .call(brush);
         },
+        pauseStream() {
+            console.log('Pausing stream');
+            if (this.eventSource) {
+                console.log('Closing event source');
+                this.eventSource.close();
+                this.eventSource = null;
+            }
+        },
         resumeStream() {
+            console.log('Resuming stream');
             if (!this.eventSource) {
                 this.eventSource = new EventSource('http://localhost:5000/stream');
                 this.eventSource.onmessage = this.handleEvent;
