@@ -1,7 +1,10 @@
 <template>
     <div id="app" class="video-group">
-        <video v-for="video in videoGroup" :key="video.id" ref="video" controls :src="getVideoUrl(video.video_path)"
-            width="400" @ended="waitAndLoop" @loadedmetadata="setPlaybackRate" autoplay muted></video>
+        <div v-for="video in videoGroup" :key="video.id" class="video-container">
+            <button class="close-button" @click="removeVideo(video.id)">x</button>
+            <video ref="video" controls :src="getVideoUrl(video.video_path)"
+                width="400" @ended="waitAndLoop" @loadedmetadata="setPlaybackRate" autoplay muted></video>
+        </div>
     </div>
 </template>
 
@@ -14,12 +17,13 @@ export default {
         }
     },
     methods: {
+        removeVideo(id) {
+            console.log('Removing video with id:', id);
+            this.$emit('removeVideo', id);
+        },
         waitAndLoop(event) {
             const video = event.target;
             video.pause();
-            video.oncanplay = () => {
-                video.play();
-            };
             video.onerror = () => {
                 console.error('Error while loading the video');
             };
@@ -45,5 +49,20 @@ export default {
     gap: 20px;
     max-height: 100vh;
     overflow-y: auto;
+}
+
+.video-container {
+    position: relative;
+}
+
+.close-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1;
 }
 </style>

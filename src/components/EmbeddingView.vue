@@ -1,6 +1,8 @@
 <template>
     <div id="scatterPlot">
-        <p>EmbeddingView component</p>
+        <div v-if="data === null">
+            <p>Loading...</p>
+        </div>
     </div>
 </template>
 
@@ -21,6 +23,12 @@ export default {
         };
     },
     methods: {
+        setGroup1(newGroup1) {
+            this.group1 = newGroup1;
+        },
+        setGroup2(newGroup2) {
+            this.group2 = newGroup2;
+        },
         group1Updated() {
             this.$emit('group1Updated', this.group1);
         },
