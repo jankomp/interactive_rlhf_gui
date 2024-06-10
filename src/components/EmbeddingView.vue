@@ -11,7 +11,7 @@ import * as d3 from 'd3';
 
 export default {
     data() {
-        const size = window.innerHeight *0.8;
+        const size = window.innerHeight * 0.8;
         return {
             width: size,
             height: size,
@@ -20,9 +20,15 @@ export default {
             data: null,
             group1: [],
             group2: [],
+            connections: [],
         };
     },
     methods: {
+        updateConnections(newConnections) {
+            this.connections = newConnections;
+            console.log('Connections updated:', this.connections);
+            this.createChart();
+        },
         setGroup1(newGroup1) {
             this.group1 = newGroup1;
         },
@@ -43,7 +49,6 @@ export default {
         },
         handleEvent(event) {
             const currentEventId = JSON.parse(event.data);
-            console.log(currentEventId);
             if (currentEventId === null || currentEventId === '') {
                 d3.select('#scatterPlot').select('svg').remove();
             } else if (currentEventId !== this.lastEventId) {
@@ -90,6 +95,24 @@ export default {
             const yScale = d3.scaleLinear()
                 .domain(d3.extent(this.data, d => d.y))
                 .range([this.height, 0]);
+
+            const line = d3.line()
+                .x(d => xScale(d.x))
+                .y(d => yScale(d.y));
+
+            this.connections.forEach(connection => {
+                const point1 = this.data.find(d => d.id === connection[0]);
+                const point2 = this.data.find(d => d.id === connection[1]);
+
+                if (point1 && point2) {
+                    svg.append('path')
+                        .datum([point1, point2])
+                        .attr('fill', 'none')
+                        .attr('stroke', 'lightgray')
+                        .attr('stroke-width', 1.5)
+                        .attr('d', line);
+                }
+            });
 
             svg.selectAll('.dot')
                 .data(this.data)

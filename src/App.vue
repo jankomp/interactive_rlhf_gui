@@ -5,8 +5,8 @@
       <EmbeddingView ref="embeddingView" class="embedding-view" @group1Updated="handleGroup1Updated" @group2Updated="handleGroup2Updated"
         @fragmentsReceived="handleVideoReceived" @feedbackComplete="handleInputSent" />
       <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo"/>
-      <GroupKeyPad @keyPressed="handleGroupKeyPressed" :isInputAllowed="isInputAllowed" @removeVideo="handleGroup2RemoveVideo"/>
-      <VideoGroupPlayer class="video-group-player" :videoGroup="group2" />
+      <GroupKeyPad @keyPressed="handleGroupKeyPressed" :isInputAllowed="isInputAllowed"/>
+      <VideoGroupPlayer class="video-group-player" :videoGroup="group2" @removeVideo="handleGroup2RemoveVideo"/>
     </div>
     <div class="pairwise-comparison" v-if="$feedback === 'pairwise'">
       <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @noVideoReceived="handleNoVideoReceived"
@@ -51,9 +51,19 @@ export default {
       feedbackCount: 0,
       group1: [],
       group2: [],
+      connections: [],
     }
   },
   methods: {
+    updateConnections() {
+        this.connections = [];
+        this.group1.forEach(point1 => {
+            this.group2.forEach(point2 => {
+                this.connections.push([point1.id, point2.id]);
+            });
+        });
+        this.$refs.embeddingView.updateConnections(this.connections);
+    },
     handleGroupKeyPressed(key) {
       const data = {
         group1: this.group1.map(video => video.id),
@@ -64,6 +74,7 @@ export default {
       axios.post('http://localhost:5000/preference', data)
         .then(response => {
           this.feedbackCount = response.data.feedback_count;
+          this.updateConnections();
           this.group1 = [];
           this.group2 = [];
           this.$refs.embeddingView.setGroup1([]);
@@ -83,6 +94,10 @@ export default {
     },
     handleInputSent() {
       this.isInputAllowed = false;
+      if (this.$refs.embeddingView) {
+        this.connections = [];
+        this.$refs.embeddingView.updateConnections(this.connections);
+      }
       if (this.$refs.videoPlayer) {
         this.$refs.videoPlayer.feedbackReceived = true;
       }
@@ -120,11 +135,9 @@ export default {
     },
     handleGroup1Updated(group1) {
       this.group1 = group1;
-      console.log('Group 1 updated:', group1);
     },
     handleGroup2Updated(group2) {
       this.group2 = group2;
-      console.log('Group 2 updated:', group2);
     },
   },
 }

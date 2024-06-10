@@ -2,8 +2,8 @@
     <div id="app" class="video-group">
         <div v-for="video in videoGroup" :key="video.id" class="video-container">
             <button class="close-button" @click="removeVideo(video.id)">x</button>
-            <video ref="video" controls :src="getVideoUrl(video.video_path)"
-                width="400" @ended="waitAndLoop" @loadedmetadata="setPlaybackRate" autoplay muted></video>
+            <video ref="video" controls :src="getVideoUrl(video.video_path)" width="400" @ended="waitAndLoop"
+                @loadedmetadata="setPlaybackRate" autoplay muted></video>
         </div>
     </div>
 </template>
@@ -28,8 +28,10 @@ export default {
                 console.error('Error while loading the video');
             };
             setTimeout(() => {
-                video.currentTime = 0;
-                video.play();
+                if (document.body.contains(video)) {
+                    video.currentTime = 0;
+                    video.play();
+                }
             }, 1000);
         },
         setPlaybackRate(event) {
