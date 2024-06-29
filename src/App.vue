@@ -2,8 +2,9 @@
   <div id="app">
 
     <div class="groupwise-comparison" v-if="$feedback === 'group'">
-      <EmbeddingView ref="embeddingView" class="embedding-view" @group1Updated="handleGroup1Updated" @group2Updated="handleGroup2Updated"
-        @fragmentsReceived="handleVideoReceived" @feedbackComplete="handleInputSent" />
+      <!-- <EmbeddingView ref="embeddingView" class="embedding-view" @group1Updated="handleGroup1Updated" @group2Updated="handleGroup2Updated"
+        @fragmentsReceived="handleVideoReceived" @feedbackComplete="handleInputSent" /> -->
+      <RadialHierarchy />
       <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo"/>
       <GroupKeyPad @keyPressed="handleGroupKeyPressed" :isInputAllowed="isInputAllowed"/>
       <VideoGroupPlayer class="video-group-player" :videoGroup="group2" @removeVideo="handleGroup2RemoveVideo"/>
@@ -24,7 +25,8 @@
 </template>
 
 <script>
-import EmbeddingView from './components/EmbeddingView.vue'
+// import EmbeddingView from './components/EmbeddingView.vue'
+import RadialHierarchy from './components/RadialHierarchy.vue'
 import GroupKeyPad from './components/GroupKeyPad.vue'
 import VideoGroupPlayer from './components/VideoGroupPlayer.vue'
 import KeyPad from './components/KeyPad.vue'
@@ -36,7 +38,8 @@ import axios from 'axios';
 export default {
   name: 'App',
   components: {
-    EmbeddingView,
+    // EmbeddingView,
+    RadialHierarchy,
     GroupKeyPad,
     VideoGroupPlayer,
     KeyPad,
