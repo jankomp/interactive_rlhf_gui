@@ -14,13 +14,13 @@ export default {
         async createChart() {
             const response = await fetch('clustered_fragments.json');
             const data = await response.json();
-            console.log(data);
+            const depth = d3.hierarchy(data).height;
 
-            const width = 1080;
-            const height = 1080;
-            const innerRadius = 320;  // Radius for the inner tree
-            const startRadius = 40;   // Starting radius for the inner tree
-            const outerRadius = 560; // Radius for the outer mirrored tree
+            const width = 1000;
+            const height = width;
+            const startRadius = width / 4 / depth;
+            const innerRadius = startRadius * depth;
+            const outerRadius = innerRadius + (startRadius * (depth - 1));
 
             const tree = d3.tree().size([2 * Math.PI, innerRadius - startRadius]);
 
@@ -54,23 +54,23 @@ export default {
                 `);
 
             node.append("circle")
-                .attr("r", 5);
+                .attr("r", 2);
 
-            node.append("text")
-                .attr("dy", "0.31em")
-                .attr("x", d => d.x < Math.PI === !d.children ? 6 : -6)
-                .attr("text-anchor", d => d.x < Math.PI === !d.children ? "start" : "end")
-                .attr("transform", d => d.x >= Math.PI ? "rotate(180)" : null)
-                .text(d => d.data.name)
-                .clone(true).lower()
-                .attr("stroke", "white");
+            // node.append("text")
+            //     .attr("dy", "0.31em")
+            //     .attr("x", d => d.x < Math.PI === !d.children ? 6 : -6)
+            //     .attr("text-anchor", d => d.x < Math.PI === !d.children ? "start" : "end")
+            //     .attr("transform", d => d.x >= Math.PI ? "rotate(180)" : null)
+            //     .text(d => d.data.name)
+            //     .clone(true).lower()
+            //     .attr("stroke", "white");
 
-            node.append("text")
-                .attr("dy", "0.31em")
-                .attr("x", 0)
-                .attr("text-anchor", "middle")
-                .attr("fill", "red")
-                .text(d => d.data.id);
+            // node.append("text")
+            //     .attr("dy", "0.31em")
+            //     .attr("x", 0)
+            //     .attr("text-anchor", "middle")
+            //     .attr("fill", "red")
+            //     .text(d => d.data.id);
 
             // Create the mirrored outer tree layout
             const reversedData = this.reverseHierarchy(data);
@@ -79,44 +79,51 @@ export default {
             const outerRoot = d3.hierarchy(reversedData);
             outerTree(outerRoot);
 
-            const outerLinks = outerRoot.links().filter(d => d.source.depth > 0);
-            const outerDescendants = outerRoot.descendants().filter(d => d.depth > 0);
+            const leafNodes = outerRoot.leaves();
+            const leafNodeWidth = 2 * Math.PI / leafNodes.length;
+            let leafNodeIndex = 0;
+            outerRoot.eachAfter(outerNode => {
+                if (outerNode.children) {
+                    outerNode.x0 = outerNode.children[0].x0;
+                    outerNode.x1 = outerNode.children[outerNode.children.length - 1].x1;
+                } else {
+                    outerNode.x0 = leafNodeIndex * leafNodeWidth;
+                    outerNode.x1 = (leafNodeIndex + 1) * leafNodeWidth;
+                    leafNodeIndex++;
+                }
+                const depth = outerRoot.height - outerNode.depth; // Reverse the depth
+                outerNode.y0 = innerRadius + depth * (outerRadius - innerRadius) / outerRoot.height;
+                outerNode.y1 = innerRadius + (depth + 1) * (outerRadius - innerRadius) / outerRoot.height;
+            });
 
-            svg.selectAll(".outerLink")
-                .data(outerLinks)
-                .enter().append("path")
-                .attr("class", "outerLink")
-                .attr("d", d3.linkRadial()
-                    .angle(d => d.x)
-                    .radius(d => innerRadius + (outerRadius - innerRadius - d.y)));
+            const outerDescendants = outerRoot.descendants().filter(d => d.depth > 0);
 
             const outerNode = svg.selectAll(".outerNode")
                 .data(outerDescendants)
-                .enter().append("g")
-                .attr("class", "outerNode")
-                .attr("transform", d => `
-                    rotate(${d.x * 180 / Math.PI - 90})
-                    translate(${innerRadius + (outerRadius - innerRadius - d.y)},0)
-                `);
+                .enter().append("g");
 
-            outerNode.append("circle")
-                .attr("r", 5);
+            // Define the color scale
+            const colorScale = d3.scaleOrdinal()
+                .domain([0, 1, 2, 3])
+                .range(["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]);
 
-            outerNode.append("text")
-                .attr("dy", "0.31em")
-                .attr("x", d => d.x < Math.PI === !d.children ? 6 : -6)
-                .attr("text-anchor", d => d.x < Math.PI === !d.children ? "start" : "end")
-                .attr("transform", d => d.x >= Math.PI ? "rotate(180)" : null)
-                .text(d => d.data.name)
-                .clone(true).lower()
-                .attr("stroke", "white");
+            const arc = d3.arc()
+                .startAngle(d => d.x0)
+                .endAngle(d => d.x1)
+                .innerRadius(d => d.y0)
+                .outerRadius(d => d.y1);
 
-            outerNode.append("text")
-                .attr("dy", "0.31em")
-                .attr("x", 0)
-                .attr("text-anchor", "middle")
-                .attr("fill", "red")
-                .text(d => d.data.id);
+            outerNode.append("path")
+                .attr("fill", d => colorScale(d.data.level))
+                .attr("opacity", d => d.data.id % 2 === 0 ? 0.5 : 1)
+                .attr("stroke", "black")
+                .attr("d", arc);
+
+            // Hide the inner layout
+            // node.selectAll("circle").style("opacity", 0);
+            // link.style("opacity", 0);
+            // node.selectAll("text:not(:nth-child(3))").style("opacity", 0); // Hide all texts except for the red ID text
+
         },
         reverseHierarchy(data) {
             // Reverse the hierarchy
