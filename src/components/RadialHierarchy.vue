@@ -22,18 +22,24 @@ export default {
             const startRadius = width / 8 / depth;
             const innerRadius = startRadius * 2 * depth;
             const outerRadius = innerRadius + (startRadius * 2 * (depth - 1));
-
             const tree = d3.cluster().size([2 * Math.PI, innerRadius - startRadius]);
 
             const root = d3.hierarchy(data);
             tree(root);
 
-            // Compute the leaf nodes
             const leafNodes = root.leaves();
-
-            // Compute the angular width of each leaf node
             const leafNodeWidth = 2 * Math.PI / leafNodes.length;
 
+            const svg = d3.select(this.$refs.chartContainer).append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .append("g")
+                .attr("transform", `translate(${width / 2},${height / 2})`);
+
+            this.createRadialTreeLayout(root, svg, startRadius, innerRadius, leafNodeWidth);
+            this.createIcicleChart(data, svg, innerRadius, outerRadius, leafNodeWidth);
+        },
+        createRadialTreeLayout(root, svg, startRadius, innerRadius, leafNodeWidth) {
             // Set the x value of each leaf node
             let leafNodeIndex = 0;
             root.eachAfter(node => {
@@ -51,12 +57,6 @@ export default {
                     node.x = (firstChildX + lastChildX) / 2;
                 }
             });
-
-            const svg = d3.select(this.$refs.chartContainer).append("svg")
-                .attr("width", width)
-                .attr("height", height)
-                .append("g")
-                .attr("transform", `translate(${width / 2},${height / 2})`);
 
             const links = root.links().filter(d => d.source.depth > 0);
             const descendants = root.descendants().filter(d => d.depth > 0);
@@ -81,22 +81,8 @@ export default {
             node.append("circle")
                 .attr("r", 2);
 
-            // node.append("text")
-            //     .attr("dy", "0.31em")
-            //     .attr("x", d => d.x < Math.PI === !d.children ? 6 : -6)
-            //     .attr("text-anchor", d => d.x < Math.PI === !d.children ? "start" : "end")
-            //     .attr("transform", d => d.x >= Math.PI ? "rotate(180)" : null)
-            //     .text(d => d.data.name)
-            //     .clone(true).lower()
-            //     .attr("stroke", "white");
-
-            // node.append("text")
-            //     .attr("dy", "0.31em")
-            //     .attr("x", 0)
-            //     .attr("text-anchor", "middle")
-            //     .attr("fill", "red")
-            //     .text(d => d.data.id);
-
+        },
+        createIcicleChart(data, svg, innerRadius, outerRadius, leafNodeWidth) {
             // Create the mirrored outer tree layout
             const reversedData = this.reverseHierarchy(data);
             const outerTree = d3.tree().size([2 * Math.PI, outerRadius - innerRadius]);
@@ -104,7 +90,7 @@ export default {
             const outerRoot = d3.hierarchy(reversedData);
             outerTree(outerRoot);
 
-            leafNodeIndex = 0;
+            let leafNodeIndex = 0;
             outerRoot.eachAfter(outerNode => {
                 if (outerNode.children) {
                     outerNode.x0 = outerNode.children[0].x0;
@@ -138,14 +124,9 @@ export default {
 
             outerNode.append("path")
                 .attr("fill", d => colorScale(d.data.level))
-                .attr("opacity", d => d.data.id % 2 === 0 ? 0.5 : 1)
+                .attr("opacity", .5)
                 .attr("stroke", "black")
                 .attr("d", arc);
-
-            // Hide the inner layout
-            // node.selectAll("circle").style("opacity", 0);
-            // link.style("opacity", 0);
-            // node.selectAll("text:not(:nth-child(3))").style("opacity", 0); // Hide all texts except for the red ID text
 
         },
         reverseHierarchy(data) {
