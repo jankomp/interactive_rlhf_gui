@@ -4,7 +4,7 @@
     <div class="groupwise-comparison" v-if="$feedback === 'group'">
       <!-- <EmbeddingView ref="embeddingView" class="embedding-view" @group1Updated="handleGroup1Updated" @group2Updated="handleGroup2Updated"
         @fragmentsReceived="handleVideoReceived" @feedbackComplete="handleInputSent" /> -->
-      <RadialHierarchy />
+      <RadialHierarchy ref="radialHierarchy" @group1Updated="handleGroup1Updated" @group2Updated="handleGroup2Updated"/>
       <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo"/>
       <GroupKeyPad @keyPressed="handleGroupKeyPressed" :isInputAllowed="isInputAllowed"/>
       <VideoGroupPlayer class="video-group-player" :videoGroup="group2" @removeVideo="handleGroup2RemoveVideo"/>
@@ -89,11 +89,11 @@ export default {
     },
     handleGroup1RemoveVideo(id) {
       this.group1 = this.group1.filter(video => video.id !== id);
-      this.$refs.embeddingView.setGroup1(this.group1);
+      this.$refs.radialHierarchy.setGroup1(this.group1);
     },
     handleGroup2RemoveVideo(id) {
       this.group2 = this.group2.filter(video => video.id !== id);
-      this.$refs.embeddingView.setGroup2(this.group2);
+      this.$refs.radialHierarchy.setGroup2(this.group2);
     },
     handleInputSent() {
       this.isInputAllowed = false;
@@ -161,20 +161,20 @@ export default {
 }
 
 .video-group-player {
-  min-width: 400px;
+  min-width: 600px;
 }
 
 .timer {
   position: fixed;
   top: 10px;
-  right: 10px;
+  left: 10px;
   z-index: 1001;
 }
 
 .feedback-counter {
   position: fixed;
   bottom: 10px;
-  right: 10px;
+  left: 10px;
   z-index: 1001;
 }
 

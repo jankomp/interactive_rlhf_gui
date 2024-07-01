@@ -2,7 +2,7 @@
     <div id="app" class="video-group">
         <div v-for="video in videoGroup" :key="video.id" class="video-container">
             <button class="close-button" @click="removeVideo(video.id)">x</button>
-            <video ref="video" :src="getVideoUrl(video.video_path)" width="400" @ended="waitAndLoop"
+            <video ref="video" :src="getVideoUrl(video.video_path)" width="300" @ended="waitAndLoop"
                 @loadedmetadata="setPlaybackRate" @error="handleVideoError" autoplay muted></video>
         </div>
     </div>
@@ -28,7 +28,7 @@ export default {
                 console.error('Error while loading the video');
             };
             setTimeout(() => {
-                if (document.body.contains(video)) {
+                if (document.body.contains(video) && video) {
                     video.currentTime = 0;
                     video.play();
                 }
@@ -49,15 +49,18 @@ export default {
 
 <style scoped>
 .video-group {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 10px;
+    row-gap: 5px;
+    align-content: start;
     max-height: 100vh;
     overflow-y: auto;
 }
 
 .video-container {
     position: relative;
+    width: 100%;
 }
 
 .close-button {
@@ -69,5 +72,10 @@ export default {
     font-size: 20px;
     cursor: pointer;
     z-index: 1;
+}
+
+video {
+    margin: 0;
+    padding: 0;
 }
 </style>

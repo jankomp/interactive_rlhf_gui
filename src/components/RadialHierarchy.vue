@@ -37,11 +37,9 @@ export default {
             this.group2 = newGroup2;
         },
         group1Updated() {
-            //console.log('group1Updated', this.group1);
             this.$emit('group1Updated', this.group1);
         },
         group2Updated() {
-            //console.log('group2Updated', this.group2);
             this.$emit('group2Updated', this.group2);
         },
         async createChart() {
@@ -236,7 +234,10 @@ export default {
                 // If the node is a parent node, add all leaf nodes descending from it
                 node.each(node => {
                     if (!node.children) {
-                        this[group].push(node.data);
+                        // Check if the node is already in the group
+                        if (!this[group].some(groupNode => groupNode.id === node.data.id)) {
+                            this[group].push(node.data);
+                        }
 
                         // Check if the node is in the other group and remove it if it is
                         const indexInOtherGroup = this[otherGroup].findIndex(item => item.id === node.data.id);
@@ -247,7 +248,10 @@ export default {
                 });
             } else {
                 // If the node is a leaf node, add it
-                this[group].push(node.data);
+                // Check if the node is already in the group
+                if (!this[group].some(groupNode => groupNode.id === node.data.id)) {
+                    this[group].push(node.data);
+                }
 
                 // Check if the node is in the other group and remove it if it is
                 const indexInOtherGroup = this[otherGroup].findIndex(item => item.id === node.data.id);
