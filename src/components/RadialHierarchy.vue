@@ -7,50 +7,82 @@ import * as d3 from "d3";
 
 export default {
     name: "RadialHierarchy",
+    data() {
+        return {
+            data: null,
+            group1: [],
+            group2: [],
+            width: 1000,
+            height: 1000,
+            root: null,
+            svg: null,
+            startRadius: null,
+            innerRadius: null,
+            outerRadius: null,
+            leafNodeWidth: null,
+        };
+    },
     mounted() {
+        window.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
         this.createChart();
     },
+
     methods: {
+        setGroup1(newGroup1) {
+            this.group1 = newGroup1;
+        },
+        setGroup2(newGroup2) {
+            this.group2 = newGroup2;
+        },
+        group1Updated() {
+            //console.log('group1Updated', this.group1);
+            this.$emit('group1Updated', this.group1);
+        },
+        group2Updated() {
+            //console.log('group2Updated', this.group2);
+            this.$emit('group2Updated', this.group2);
+        },
         async createChart() {
             const response = await fetch('clustered_fragments.json');
-            const data = await response.json();
-            const depth = d3.hierarchy(data).height;
-            console.log('depth', depth);
+            this.data = await response.json();
+            if (this.data) {
+                const depth = d3.hierarchy(this.data).height;
 
-            const width = 1000;
-            const height = width;
-            const startRadius = width / 8 / depth;
-            const innerRadius = startRadius * 2 * depth;
-            const outerRadius = innerRadius + (startRadius * 2 * (depth - 1));
-            const tree = d3.cluster().size([2 * Math.PI, innerRadius - startRadius]);
+                this.startRadius = this.width / 8 / depth;
+                this.innerRadius = this.startRadius * 2 * depth;
+                this.outerRadius = this.innerRadius + (this.startRadius * 2 * (depth - 1));
+                const tree = d3.cluster().size([2 * Math.PI, this.innerRadius - this.startRadius]);
 
-            const root = d3.hierarchy(data);
-            tree(root);
+                this.root = d3.hierarchy(this.data);
+                tree(this.root);
 
-            const leafNodes = root.leaves();
-            const leafNodeWidth = 2 * Math.PI / leafNodes.length;
+                const leafNodes = this.root.leaves();
+                this.leafNodeWidth = 2 * Math.PI / leafNodes.length;
 
-            const svg = d3.select(this.$refs.chartContainer).append("svg")
-                .attr("width", width)
-                .attr("height", height)
-                .append("g")
-                .attr("transform", `translate(${width / 2},${height / 2})`);
+                this.svg = d3.select(this.$refs.chartContainer).append("svg")
+                    .attr("width", this.width)
+                    .attr("height", this.height)
+                    .append("g")
+                    .attr("transform", `translate(${this.width / 2},${this.height / 2})`);
 
-            this.createRadialTreeLayout(root, svg, startRadius, innerRadius, leafNodeWidth);
-            this.createIcicleChart(data, svg, innerRadius, outerRadius, leafNodeWidth);
+                this.createRadialTreeLayout();
+                this.createIcicleChart();
+            }
         },
-        createRadialTreeLayout(root, svg, startRadius, innerRadius, leafNodeWidth) {
+        createRadialTreeLayout() {
             // Set the x value of each leaf node
             let leafNodeIndex = 0;
-            root.eachAfter(node => {
+            this.root.eachAfter(node => {
                 if (!node.children) {
-                    node.x = leafNodeIndex * leafNodeWidth + (leafNodeWidth / 2);
+                    node.x = leafNodeIndex * this.leafNodeWidth + (this.leafNodeWidth / 2);
                     leafNodeIndex++;
                 }
             });
 
             // Recompute the x value of non-leaf nodes
-            root.eachAfter(node => {
+            this.root.eachAfter(node => {
                 if (node.children) {
                     const firstChildX = node.children[0].x;
                     const lastChildX = node.children[node.children.length - 1].x;
@@ -58,34 +90,34 @@ export default {
                 }
             });
 
-            const links = root.links().filter(d => d.source.depth > 0);
-            const descendants = root.descendants().filter(d => d.depth > 0);
+            const links = this.root.links().filter(d => d.source.depth > 0);
+            const descendants = this.root.descendants().filter(d => d.depth > 0);
 
-            svg.selectAll(".link")
+            this.svg.selectAll(".link")
                 .data(links)
                 .enter().append("path")
                 .attr("class", "link")
                 .attr("d", d3.linkRadial()
                     .angle(d => d.x)
-                    .radius(d => startRadius + d.y));
+                    .radius(d => this.startRadius + d.y));
 
-            const node = svg.selectAll(".node")
+            const node = this.svg.selectAll(".node")
                 .data(descendants)
                 .enter().append("g")
                 .attr("class", "node")
                 .attr("transform", d => `
                     rotate(${d.x * 180 / Math.PI - 90})
-                    translate(${startRadius + d.y},0)
+                    translate(${this.startRadius + d.y},0)
                 `);
 
             node.append("circle")
                 .attr("r", 2);
 
         },
-        createIcicleChart(data, svg, innerRadius, outerRadius, leafNodeWidth) {
+        createIcicleChart() {
             // Create the mirrored outer tree layout
-            const reversedData = this.reverseHierarchy(data);
-            const outerTree = d3.tree().size([2 * Math.PI, outerRadius - innerRadius]);
+            const reversedData = this.reverseHierarchy();
+            const outerTree = d3.tree().size([2 * Math.PI, this.outerRadius - this.innerRadius]);
 
             const outerRoot = d3.hierarchy(reversedData);
             outerTree(outerRoot);
@@ -96,25 +128,33 @@ export default {
                     outerNode.x0 = outerNode.children[0].x0;
                     outerNode.x1 = outerNode.children[outerNode.children.length - 1].x1;
                 } else {
-                    outerNode.x0 = leafNodeIndex * leafNodeWidth;
-                    outerNode.x1 = (leafNodeIndex + 1) * leafNodeWidth;
+                    outerNode.x0 = leafNodeIndex * this.leafNodeWidth;
+                    outerNode.x1 = (leafNodeIndex + 1) * this.leafNodeWidth;
                     leafNodeIndex++;
                 }
                 const depth = outerRoot.height - outerNode.depth; // Reverse the depth
-                outerNode.y0 = innerRadius + depth * (outerRadius - innerRadius) / outerRoot.height;
-                outerNode.y1 = innerRadius + (depth + 1) * (outerRadius - innerRadius) / outerRoot.height;
+                outerNode.y0 = this.innerRadius + depth * (this.outerRadius - this.innerRadius) / outerRoot.height;
+                outerNode.y1 = this.innerRadius + (depth + 1) * (this.outerRadius - this.innerRadius) / outerRoot.height;
             });
 
             const outerDescendants = outerRoot.descendants().filter(d => d.depth > 0);
 
-            const outerNode = svg.selectAll(".outerNode")
+            const outerNode = this.svg.selectAll(".outerNode")
                 .data(outerDescendants)
-                .enter().append("g");
-
-            // Define the color scale
-            const colorScale = d3.scaleOrdinal()
-                .domain([0, 1, 2, 3])
-                .range(["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]);
+                .enter().append("g")
+                .on("mousedown", (event, d) => {
+                    if (event.button === 0) {
+                        this.handleNodeClick(d, 'group1', event.ctrlKey);
+                    } else if (event.button === 2) {
+                        this.handleNodeClick(d, 'group2', event.ctrlKey);
+                    }
+                }).on("mouseenter", (event, d) => {
+                    if (event.buttons === 1) {
+                        this.handleNodeClick(d, 'group1', true);
+                    } else if (event.buttons === 2) {
+                        this.handleNodeClick(d, 'group2', true);
+                    }
+                });
 
             const arc = d3.arc()
                 .startAngle(d => d.x0)
@@ -123,13 +163,55 @@ export default {
                 .outerRadius(d => d.y1);
 
             outerNode.append("path")
-                .attr("fill", d => colorScale(d.data.level))
-                .attr("opacity", .5)
+                .attr("fill", d => {
+                    if (!d.children) {
+                        if (this.group1.some(node => node.id === d.data.id)) {
+                            return "blue";
+                        } else if (this.group2.some(node => node.id === d.data.id)) {
+                            return "orange";
+                        } else {
+                            return "white";
+                        }
+                    } else {
+                        const { group1Count, group2Count, noGroupCount } = this.countLeafDescendantsInGroups(d);
+                        const totalCount = group1Count + group2Count + noGroupCount;
+
+                        const colorWhite = d3.rgb("white");
+                        const colorBlue = d3.rgb("blue");
+                        const colorOrange = d3.rgb("orange");
+
+                        return d3.rgb(
+                            (colorWhite.r * noGroupCount + colorBlue.r * group1Count + colorOrange.r * group2Count) / totalCount,
+                            (colorWhite.g * noGroupCount + colorBlue.g * group1Count + colorOrange.g * group2Count) / totalCount,
+                            (colorWhite.b * noGroupCount + colorBlue.b * group1Count + colorOrange.b * group2Count) / totalCount
+                        );
+                    }
+                })
+                .attr("opacity", 1)
                 .attr("stroke", "black")
                 .attr("d", arc);
-
         },
-        reverseHierarchy(data) {
+        countLeafDescendantsInGroups(node) {
+            const allDescendants = node.descendants();
+            const leafDescendants = allDescendants.filter(node => !node.children);
+
+            let group1Count = 0;
+            let group2Count = 0;
+            let noGroupCount = 0;
+
+            leafDescendants.forEach(leaf => {
+                if (this.group1.some(groupNode => groupNode.id === leaf.data.id)) {
+                    group1Count++;
+                } else if (this.group2.some(groupNode => groupNode.id === leaf.data.id)) {
+                    group2Count++;
+                } else {
+                    noGroupCount++;
+                }
+            });
+
+            return { group1Count, group2Count, noGroupCount };
+        },
+        reverseHierarchy() {
             // Reverse the hierarchy
             function reverseNode(node) {
                 if (!node.children || node.children.length === 0) {
@@ -140,8 +222,56 @@ export default {
                     children: node.children.map(reverseNode)
                 };
             }
-            const reversedData = reverseNode(data);
+            const reversedData = reverseNode(this.data);
             return reversedData;
+        },
+        handleNodeClick(node, group, ctrlKey) {
+            if (!ctrlKey) {
+                this[group] = [];
+            }
+
+            const otherGroup = group === 'group1' ? 'group2' : 'group1';
+
+            if (node.children) {
+                // If the node is a parent node, add all leaf nodes descending from it
+                node.each(node => {
+                    if (!node.children) {
+                        this[group].push(node.data);
+
+                        // Check if the node is in the other group and remove it if it is
+                        const indexInOtherGroup = this[otherGroup].findIndex(item => item.id === node.data.id);
+                        if (indexInOtherGroup !== -1) {
+                            this[otherGroup].splice(indexInOtherGroup, 1);
+                        }
+                    }
+                });
+            } else {
+                // If the node is a leaf node, add it
+                this[group].push(node.data);
+
+                // Check if the node is in the other group and remove it if it is
+                const indexInOtherGroup = this[otherGroup].findIndex(item => item.id === node.data.id);
+                if (indexInOtherGroup !== -1) {
+                    this[otherGroup].splice(indexInOtherGroup, 1);
+                }
+            }
+
+            this[group + 'Updated']();
+        },
+    },
+
+    watch: {
+        group1: {
+            handler() {
+                this.createIcicleChart();
+            },
+            deep: true
+        },
+        group2: {
+            handler() {
+                this.createIcicleChart();
+            },
+            deep: true
         }
     }
 };
