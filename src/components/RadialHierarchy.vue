@@ -15,17 +15,42 @@ export default {
             const response = await fetch('clustered_fragments.json');
             const data = await response.json();
             const depth = d3.hierarchy(data).height;
+            console.log('depth', depth);
 
             const width = 1000;
             const height = width;
-            const startRadius = width / 4 / depth;
-            const innerRadius = startRadius * depth;
-            const outerRadius = innerRadius + (startRadius * (depth - 1));
+            const startRadius = width / 8 / depth;
+            const innerRadius = startRadius * 2 * depth;
+            const outerRadius = innerRadius + (startRadius * 2 * (depth - 1));
 
-            const tree = d3.tree().size([2 * Math.PI, innerRadius - startRadius]);
+            const tree = d3.cluster().size([2 * Math.PI, innerRadius - startRadius]);
 
             const root = d3.hierarchy(data);
             tree(root);
+
+            // Compute the leaf nodes
+            const leafNodes = root.leaves();
+
+            // Compute the angular width of each leaf node
+            const leafNodeWidth = 2 * Math.PI / leafNodes.length;
+
+            // Set the x value of each leaf node
+            let leafNodeIndex = 0;
+            root.eachAfter(node => {
+                if (!node.children) {
+                    node.x = leafNodeIndex * leafNodeWidth + (leafNodeWidth / 2);
+                    leafNodeIndex++;
+                }
+            });
+
+            // Recompute the x value of non-leaf nodes
+            root.eachAfter(node => {
+                if (node.children) {
+                    const firstChildX = node.children[0].x;
+                    const lastChildX = node.children[node.children.length - 1].x;
+                    node.x = (firstChildX + lastChildX) / 2;
+                }
+            });
 
             const svg = d3.select(this.$refs.chartContainer).append("svg")
                 .attr("width", width)
@@ -79,9 +104,7 @@ export default {
             const outerRoot = d3.hierarchy(reversedData);
             outerTree(outerRoot);
 
-            const leafNodes = outerRoot.leaves();
-            const leafNodeWidth = 2 * Math.PI / leafNodes.length;
-            let leafNodeIndex = 0;
+            leafNodeIndex = 0;
             outerRoot.eachAfter(outerNode => {
                 if (outerNode.children) {
                     outerNode.x0 = outerNode.children[0].x0;
