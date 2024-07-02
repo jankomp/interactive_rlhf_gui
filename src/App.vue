@@ -4,7 +4,8 @@
     <div class="groupwise-comparison" v-if="$feedback === 'group'">
       <!-- <EmbeddingView ref="embeddingView" class="embedding-view" @group1Updated="handleGroup1Updated" @group2Updated="handleGroup2Updated"
         @fragmentsReceived="handleVideoReceived" @feedbackComplete="handleInputSent" /> -->
-      <RadialHierarchy ref="radialHierarchy" @group1Updated="handleGroup1Updated" @group2Updated="handleGroup2Updated"/>
+      <RadialHierarchy ref="radialHierarchy" @group1Updated="handleGroup1Updated" @group2Updated="handleGroup2Updated"
+      @fragmentsReceived="handleVideoReceived" @feedbackComplete="handleInputSent"/>
       <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo"/>
       <GroupKeyPad @keyPressed="handleGroupKeyPressed" :isInputAllowed="isInputAllowed"/>
       <VideoGroupPlayer class="video-group-player" :videoGroup="group2" @removeVideo="handleGroup2RemoveVideo"/>

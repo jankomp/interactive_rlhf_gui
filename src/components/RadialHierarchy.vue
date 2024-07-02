@@ -23,10 +23,10 @@ export default {
         };
     },
     mounted() {
+        this.resumeStream();
         window.addEventListener('contextmenu', (e) => {
             e.preventDefault();
         });
-        this.createChart();
     },
 
     methods: {
@@ -42,9 +42,8 @@ export default {
         group2Updated() {
             this.$emit('group2Updated', this.group2);
         },
-        async createChart() {
-            const response = await fetch('clustered_fragments.json');
-            this.data = await response.json();
+        createChart() {
+            console.log('Creating chart', this.data);
             if (this.data) {
                 const depth = d3.hierarchy(this.data).height;
 
@@ -261,6 +260,61 @@ export default {
             }
 
             this[group + 'Updated']();
+        },
+
+        pauseStream() {
+            console.log('Pausing stream');
+            if (this.eventSource) {
+                console.log('Closing event source');
+                this.eventSource.close();
+                this.eventSource = null;
+            }
+        },
+        resumeStream() {
+            console.log('Resuming stream');
+            if (!this.eventSource) {
+                this.eventSource = new EventSource('http://localhost:5000/stream');
+                this.eventSource.onmessage = this.handleEvent;
+            }
+        },
+        fragmentsReceived() {
+            this.$emit('fragmentsReceived');
+        },
+        feedbackComplete() {
+            this.$emit('feedbackComplete');
+        },
+        handleEvent(event) {
+            const currentEventId = JSON.parse(event.data);
+            if (currentEventId === null || currentEventId === '') {
+                d3.select('#scatterPlot').select('svg').remove();
+                this.feedbackComplete();
+            } else if (currentEventId !== this.lastEventId) {
+                this.lastEventId = currentEventId;
+                this.fetchData();
+            }
+        },
+        fetchData() {
+            fetch('http://localhost:5000/fragments')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data) {
+                        console.log('Data received:', data);
+                        this.data = data;
+                        this.createChart();
+                        this.fragmentsReceived();
+                    } else {
+                        console.log('No data received');
+                        this.feedbackComplete();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
         },
     },
 
