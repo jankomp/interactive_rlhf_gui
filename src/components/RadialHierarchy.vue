@@ -25,9 +25,9 @@ export default {
     },
     mounted() {
         //this.resumeStream();
-        // window.addEventListener('contextmenu', (e) => {
-        //     e.preventDefault();
-        // });
+        window.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
         this.createChart();
     },
 
@@ -72,10 +72,10 @@ export default {
                     .attr("transform", `translate(${this.width / 2},${this.height / 2})`);
 
                 this.createIcicleChart();
-                this.creatEdgeBundles();
+                this.createEdgeBundles();
             }
         },
-        creatEdgeBundles() {
+        createEdgeBundles() {
             // Set the x value of each leaf node
             let leafNodeIndex = 0;
             this.root.eachAfter(node => {
@@ -97,24 +97,61 @@ export default {
             const descendants = this.root.descendants().filter(d => d.depth > 0);
             const maxVariance = this.suggestionData[0].var;
 
-            const leafNodePairs = this.suggestionData.map(sug => {
+            // Create a radial line generator with a bundling factor of 0.85
+            const line = d3.lineRadial()
+                .curve(d3.curveBundle.beta(0.85))
+                .radius(d => this.startRadius + d.y)
+                .angle(d => d.x);
+
+            // Create the edge bundles
+            const edgeBundles = this.suggestionData.map(sug => {
                 const node1 = descendants.find(node => node.data.id === sug.id1);
                 const node2 = descendants.find(node => node.data.id === sug.id2);
                 const estVar = sug.var / maxVariance;
-                return [node1, node2, estVar];
+
+                // Find the common ancestor of node1 and node2
+                let ancestor = node1;
+                while (!ancestor.descendants().includes(node2)) {
+                    ancestor = ancestor.parent;
+                }
+
+                // Create a list of points from node1, up to the ancestor, and then down to node2
+                const points = [...getAncestors(node1, ancestor), ancestor, ...getDescendants(node2, ancestor)].map(node => {
+                    return { x: node.x, y: node.y, opacity: estVar };
+                });
+
+                return points;
             });
 
+            // Draw the edge bundles
             this.svg.selectAll(".link")
-                .data(leafNodePairs)
-                .enter().append("line")
+                .data(edgeBundles)
+                .enter().append("path")
                 .attr("class", "link")
-                .attr("x1", d => Math.cos(d[0].x - Math.PI / 2) * (this.startRadius + d[0].y))
-                .attr("y1", d => Math.sin(d[0].x - Math.PI / 2) * (this.startRadius + d[0].y))
-                .attr("x2", d => Math.cos(d[1].x - Math.PI / 2) * (this.startRadius + d[1].y))
-                .attr("y2", d => Math.sin(d[1].x - Math.PI / 2) * (this.startRadius + d[1].y))
+                .attr("d", line)
                 .attr("stroke", "#555")
-                .attr("stroke-opacity", d => d[2])
-                .attr("stroke-width", 0.2);
+                .attr("stroke-opacity", d => d[0].opacity)
+                .attr("stroke-width", 0.2)
+                .attr("fill", "none");
+
+            // Helper functions to get the ancestors and descendants of a node
+            function getAncestors(node, ancestor) {
+                const ancestors = [];
+                while (node !== ancestor) {
+                    ancestors.push(node);
+                    node = node.parent;
+                }
+                return ancestors;
+            }
+
+            function getDescendants(node, ancestor) {
+                const descendants = [];
+                while (node !== ancestor) {
+                    descendants.unshift(node);
+                    node = node.parent;
+                }
+                return descendants;
+            }
         },
         createIcicleChart() {
             // Create the mirrored outer tree layout
