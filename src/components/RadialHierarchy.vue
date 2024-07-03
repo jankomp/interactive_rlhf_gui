@@ -9,7 +9,8 @@ export default {
     name: "RadialHierarchy",
     data() {
         return {
-            data: null,
+            fragmentData: null,
+            suggestionData: null,
             group1: [],
             group2: [],
             width: 1000,
@@ -23,10 +24,11 @@ export default {
         };
     },
     mounted() {
-        this.resumeStream();
-        window.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-        });
+        //this.resumeStream();
+        // window.addEventListener('contextmenu', (e) => {
+        //     e.preventDefault();
+        // });
+        this.createChart();
     },
 
     methods: {
@@ -42,17 +44,22 @@ export default {
         group2Updated() {
             this.$emit('group2Updated', this.group2);
         },
-        createChart() {
-            console.log('Creating chart', this.data);
-            if (this.data) {
-                const depth = d3.hierarchy(this.data).height;
+        async createChart() {
+            const response = await fetch('clustered_fragments.json');
+            this.fragmentData = await response.json();
+            //console.log(this.fragment_data);
+            const response2 = await fetch('active_learning_suggestions.json');
+            this.suggestionData = await response2.json();
+            //console.log(this.suggestion_data);
+            if (this.fragmentData) {
+                const depth = d3.hierarchy(this.fragmentData).height;
 
                 this.startRadius = this.width / 8 / depth;
                 this.innerRadius = this.startRadius * 2 * depth;
                 this.outerRadius = this.innerRadius + (this.startRadius * 2 * (depth - 1));
                 const tree = d3.cluster().size([2 * Math.PI, this.innerRadius - this.startRadius]);
 
-                this.root = d3.hierarchy(this.data);
+                this.root = d3.hierarchy(this.fragmentData);
                 tree(this.root);
 
                 const leafNodes = this.root.leaves();
@@ -64,11 +71,11 @@ export default {
                     .append("g")
                     .attr("transform", `translate(${this.width / 2},${this.height / 2})`);
 
-                this.createRadialTreeLayout();
                 this.createIcicleChart();
+                this.creatEdgeBundles();
             }
         },
-        createRadialTreeLayout() {
+        creatEdgeBundles() {
             // Set the x value of each leaf node
             let leafNodeIndex = 0;
             this.root.eachAfter(node => {
@@ -87,29 +94,27 @@ export default {
                 }
             });
 
-            const links = this.root.links().filter(d => d.source.depth > 0);
             const descendants = this.root.descendants().filter(d => d.depth > 0);
+            const maxVariance = this.suggestionData[0].var;
+
+            const leafNodePairs = this.suggestionData.map(sug => {
+                const node1 = descendants.find(node => node.data.id === sug.id1);
+                const node2 = descendants.find(node => node.data.id === sug.id2);
+                const estVar = sug.var / maxVariance;
+                return [node1, node2, estVar];
+            });
 
             this.svg.selectAll(".link")
-                .data(links)
-                .enter().append("path")
+                .data(leafNodePairs)
+                .enter().append("line")
                 .attr("class", "link")
-                .attr("d", d3.linkRadial()
-                    .angle(d => d.x)
-                    .radius(d => this.startRadius + d.y));
-
-            const node = this.svg.selectAll(".node")
-                .data(descendants)
-                .enter().append("g")
-                .attr("class", "node")
-                .attr("transform", d => `
-                    rotate(${d.x * 180 / Math.PI - 90})
-                    translate(${this.startRadius + d.y},0)
-                `);
-
-            node.append("circle")
-                .attr("r", 2);
-
+                .attr("x1", d => Math.cos(d[0].x - Math.PI / 2) * (this.startRadius + d[0].y))
+                .attr("y1", d => Math.sin(d[0].x - Math.PI / 2) * (this.startRadius + d[0].y))
+                .attr("x2", d => Math.cos(d[1].x - Math.PI / 2) * (this.startRadius + d[1].y))
+                .attr("y2", d => Math.sin(d[1].x - Math.PI / 2) * (this.startRadius + d[1].y))
+                .attr("stroke", "#555")
+                .attr("stroke-opacity", d => d[2])
+                .attr("stroke-width", 0.2);
         },
         createIcicleChart() {
             // Create the mirrored outer tree layout
@@ -219,7 +224,7 @@ export default {
                     children: node.children.map(reverseNode)
                 };
             }
-            const reversedData = reverseNode(this.data);
+            const reversedData = reverseNode(this.fragmentData);
             return reversedData;
         },
         handleNodeClick(node, group, ctrlKey) {
@@ -304,7 +309,7 @@ export default {
                 .then(data => {
                     if (data) {
                         console.log('Data received:', data);
-                        this.data = data;
+                        this.fragmentData = data;
                         this.createChart();
                         this.fragmentsReceived();
                     } else {
