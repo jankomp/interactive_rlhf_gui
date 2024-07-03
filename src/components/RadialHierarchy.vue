@@ -7,20 +7,22 @@ import * as d3 from "d3";
 
 export default {
     name: "RadialHierarchy",
+    props: ['chartSize', 'numberOfSuggestions', 'beta'],
     data() {
         return {
             fragmentData: null,
             suggestionData: null,
             group1: [],
             group2: [],
-            width: 1000,
-            height: 1000,
+            width: this.chartSize,
+            height: this.chartSize,
             root: null,
             svg: null,
             startRadius: null,
             innerRadius: null,
             outerRadius: null,
             leafNodeWidth: null,
+            previousNumberOfSuggestions: 0,
         };
     },
     mounted() {
@@ -44,12 +46,16 @@ export default {
         group2Updated() {
             this.$emit('group2Updated', this.group2);
         },
+        suggestionDataLoaded(totalNumberOfSuggestions) {
+            this.$emit('suggestionDataLoaded', totalNumberOfSuggestions);
+        },
         async createChart() {
             const response = await fetch('clustered_fragments.json');
             this.fragmentData = await response.json();
             //console.log(this.fragment_data);
             const response2 = await fetch('active_learning_suggestions.json');
             this.suggestionData = await response2.json();
+            this.suggestionDataLoaded(this.suggestionData.length);
             //console.log(this.suggestion_data);
             if (this.fragmentData) {
                 const depth = d3.hierarchy(this.fragmentData).height;
@@ -75,7 +81,7 @@ export default {
                 this.createEdgeBundles();
             }
         },
-        createEdgeBundles() {
+        createEdgeBundles(redraw = false) {
             // Set the x value of each leaf node
             let leafNodeIndex = 0;
             this.root.eachAfter(node => {
@@ -99,12 +105,12 @@ export default {
 
             // Create a radial line generator with a bundling factor of 0.85
             const line = d3.lineRadial()
-                .curve(d3.curveBundle.beta(0.85))
+                .curve(d3.curveBundle.beta(this.beta))
                 .radius(d => this.startRadius + d.y)
                 .angle(d => d.x);
 
             // Create the edge bundles
-            const edgeBundles = this.suggestionData.map(sug => {
+            const edgeBundles = this.suggestionData.slice(0, this.numberOfSuggestions).map(sug => {
                 const node1 = descendants.find(node => node.data.id === sug.id1);
                 const node2 = descendants.find(node => node.data.id === sug.id2);
                 const estVar = sug.var / maxVariance;
@@ -123,16 +129,41 @@ export default {
                 return points;
             });
 
-            // Draw the edge bundles
-            this.svg.selectAll(".link")
-                .data(edgeBundles)
-                .enter().append("path")
-                .attr("class", "link")
-                .attr("d", line)
-                .attr("stroke", "#555")
-                .attr("stroke-opacity", d => d[0].opacity)
-                .attr("stroke-width", 0.2)
-                .attr("fill", "none");
+            if (!redraw) {
+                if (this.numberOfSuggestions > this.previousNumberOfSuggestions) {
+                    // Add new edges
+                    this.svg.selectAll(".link")
+                        .data(edgeBundles)
+                        .enter().append("path")
+                        .attr("class", "link")
+                        .attr("d", line)
+                        .attr("stroke", "#555")
+                        .attr("stroke-opacity", d => d[0].opacity)
+                        .attr("stroke-width", 0.2)
+                        .attr("fill", "none");
+                } else if (this.numberOfSuggestions < this.previousNumberOfSuggestions) {
+                    // Remove excess edges
+                    this.svg.selectAll(".link")
+                        .data(edgeBundles)
+                        .exit().remove();
+                }
+            } else {
+                this.svg.selectAll(".link")
+                    .data(edgeBundles)
+                    .join(
+                        enter => enter.append("path")
+                            .attr("class", "link")
+                            .attr("d", line)
+                            .attr("stroke", "#555")
+                            .attr("stroke-opacity", d => d[0].opacity)
+                            .attr("stroke-width", 0.2)
+                            .attr("fill", "none"),
+                        update => update
+                            .attr("d", line)
+                            .attr("stroke-opacity", d => d[0].opacity),
+                        exit => exit.remove()
+                    );
+            }
 
             // Helper functions to get the ancestors and descendants of a node
             function getAncestors(node, ancestor) {
@@ -370,6 +401,23 @@ export default {
         group2: {
             handler() {
                 this.createIcicleChart();
+            },
+            deep: true
+        },
+        numberOfSuggestions: {
+            handler() {
+                this.$nextTick(() => {
+                    this.createEdgeBundles();
+                    this.previousNumberOfSuggestions = this.numberOfSuggestions;
+                });
+            },
+            deep: true
+        },
+        beta: {
+            handler() {
+                this.$nextTick(() => {
+                    this.createEdgeBundles(true);
+                });
             },
             deep: true
         }

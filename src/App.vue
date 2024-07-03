@@ -4,11 +4,21 @@
     <div class="groupwise-comparison" v-if="$feedback === 'group'">
       <!-- <EmbeddingView ref="embeddingView" class="embedding-view" @group1Updated="handleGroup1Updated" @group2Updated="handleGroup2Updated"
         @fragmentsReceived="handleVideoReceived" @feedbackComplete="handleInputSent" /> -->
-      <RadialHierarchy ref="radialHierarchy" @group1Updated="handleGroup1Updated" @group2Updated="handleGroup2Updated"
-      @fragmentsReceived="handleVideoReceived" @feedbackComplete="handleInputSent"/>
-      <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo"/>
-      <GroupKeyPad @keyPressed="handleGroupKeyPressed" :isInputAllowed="isInputAllowed"/>
-      <VideoGroupPlayer class="video-group-player" :videoGroup="group2" @removeVideo="handleGroup2RemoveVideo"/>
+      <div class="exploration-component">
+        <RadialHierarchy ref="radialHierarchy" class="hierarchical-view" @group1Updated="handleGroup1Updated"
+          :chart-size="1000" @group2Updated="handleGroup2Updated" @fragmentsReceived="handleVideoReceived"
+          @feedbackComplete="handleInputSent" @suggestionDataLoaded="handleSuggestionDataLoaded"
+          :numberOfSuggestions="numberOfSuggestions" :beta="beta" />
+        <SliderInput class="full-width-slider" :sliderValueName="'Number of Suggestions'" :scaleFactor="1"
+          :minSliderValue="1" :maxSliderValue="totalNumberOfSuggestions" :initialValue="totalNumberOfSuggestions" :logarithmic="true"
+          @sliderValueChanged="handleNumberOfSuggestionsChange" />
+        <SliderInput class="full-width-slider" :sliderValueName="'Beta (Bundling strength)'" :scaleFactor="100"
+          :minSliderValue="0.0" :maxSliderValue="0.99" :initialValue="0.85" :logarithmic="false"
+          @sliderValueChanged="handleBetaChange" />
+      </div>
+      <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo" />
+      <GroupKeyPad @keyPressed="handleGroupKeyPressed" :isInputAllowed="isInputAllowed" />
+      <VideoGroupPlayer class="video-group-player" :videoGroup="group2" @removeVideo="handleGroup2RemoveVideo" />
     </div>
     <div class="pairwise-comparison" v-if="$feedback === 'pairwise'">
       <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @noVideoReceived="handleNoVideoReceived"
@@ -16,9 +26,9 @@
       <KeyPad :isInputAllowed="isInputAllowed" @inputSent="handleInputSent"
         @feedbackCountUpdated="handleFeedbackCountUpdated" />
     </div>
-    <div v-if="!isInputAllowed" class="overlay">
+    <!-- <div v-if="!isInputAllowed" class="overlay">
       <p>{{ blockingMessage }}</p>
-    </div>
+    </div> -->
     <FeedbackTimer class="timer" :isInputAllowed="isInputAllowed" @pauseTimerEvent="handlePauseTimer"
       @resumeTimerEvent="handleResumeTimer" />
     <FeedbackCounter ref="feedbackCounter" class="feedback-counter" :givenFeedbacks="feedbackCount" />
@@ -26,8 +36,8 @@
 </template>
 
 <script>
-// import EmbeddingView from './components/EmbeddingView.vue'
 import RadialHierarchy from './components/RadialHierarchy.vue'
+import SliderInput from './components/SliderInput.vue'
 import GroupKeyPad from './components/GroupKeyPad.vue'
 import VideoGroupPlayer from './components/VideoGroupPlayer.vue'
 import KeyPad from './components/KeyPad.vue'
@@ -39,8 +49,8 @@ import axios from 'axios';
 export default {
   name: 'App',
   components: {
-    // EmbeddingView,
     RadialHierarchy,
+    SliderInput,
     GroupKeyPad,
     VideoGroupPlayer,
     KeyPad,
@@ -56,17 +66,20 @@ export default {
       group1: [],
       group2: [],
       connections: [],
+      numberOfSuggestions: 100,
+      totalNumberOfSuggestions: 100,
+      beta: 0.85,
     }
   },
   methods: {
     updateConnections() {
-        this.connections = [];
-        this.group1.forEach(point1 => {
-            this.group2.forEach(point2 => {
-                this.connections.push([point1.id, point2.id]);
-            });
+      this.connections = [];
+      this.group1.forEach(point1 => {
+        this.group2.forEach(point2 => {
+          this.connections.push([point1.id, point2.id]);
         });
-        this.$refs.embeddingView.updateConnections(this.connections);
+      });
+      this.$refs.embeddingView.updateConnections(this.connections);
     },
     handleGroupKeyPressed(key) {
       const data = {
@@ -149,14 +162,38 @@ export default {
     handleGroup2Updated(group2) {
       this.group2 = group2;
     },
+    handleNumberOfSuggestionsChange(newVal) {
+      this.numberOfSuggestions = newVal;
+    },
+    handleSuggestionDataLoaded(newTotalNumberOfSuggestions) {
+      this.totalNumberOfSuggestions = newTotalNumberOfSuggestions;
+    },
+    handleBetaChange(newBeta) {
+      this.beta = newBeta;
+    }
   },
 }
 </script>
 
 <style scoped>
 .embedding-view {
-    min-height: 80vh;
-  }
+  min-height: 80vh;
+}
+
+.hierarchical-view {
+  min-width: 75vh;
+  min-height: 80vh;
+}
+
+.exploration-component {
+  display: flex;
+  flex-direction: column;
+}
+
+.full-width-slider {
+  width: 100%;
+}
+
 .groupwise-comparison {
   display: flex;
 }
