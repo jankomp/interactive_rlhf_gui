@@ -54,11 +54,13 @@ export default {
             if (!this.isInputAllowed) {
                 return;
             }
-            this.activeKey = key;
-            this.$emit('keyPressed', this.activeKey);
-            setTimeout(() => {
-                this.activeKey = null;
-            }, 250);
+            if (['ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+                this.activeKey = key;
+                this.$emit('keyPressed', this.activeKey);
+                setTimeout(() => {
+                    this.activeKey = null;
+                }, 250);
+            }
         },
     }
 }

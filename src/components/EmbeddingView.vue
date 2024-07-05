@@ -24,7 +24,7 @@ export default {
         };
     },
     methods: {
-        updateConnections(newConnections) {
+        updatePreferences(newConnections) {
             this.connections = newConnections;
             console.log('Connections updated:', this.connections);
             if (Array.isArray(this.data)) {

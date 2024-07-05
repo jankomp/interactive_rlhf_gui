@@ -10,8 +10,8 @@
           @feedbackComplete="handleInputSent" @suggestionDataLoaded="handleSuggestionDataLoaded"
           :numberOfSuggestions="numberOfSuggestions" :beta="beta" />
         <SliderInput class="full-width-slider" :sliderValueName="'Number of Suggestions'" :scaleFactor="1"
-          :minSliderValue="1" :maxSliderValue="totalNumberOfSuggestions" :initialValue="totalNumberOfSuggestions" :logarithmic="true"
-          @sliderValueChanged="handleNumberOfSuggestionsChange" />
+          :minSliderValue="1" :maxSliderValue="totalNumberOfSuggestions" :initialValue="totalNumberOfSuggestions"
+          :logarithmic="true" @sliderValueChanged="handleNumberOfSuggestionsChange" />
         <SliderInput class="full-width-slider" :sliderValueName="'Beta (Bundling strength)'" :scaleFactor="100"
           :minSliderValue="0.0" :maxSliderValue="0.99" :initialValue="0.85" :logarithmic="false"
           @sliderValueChanged="handleBetaChange" />
@@ -26,9 +26,9 @@
       <KeyPad :isInputAllowed="isInputAllowed" @inputSent="handleInputSent"
         @feedbackCountUpdated="handleFeedbackCountUpdated" />
     </div>
-    <!-- <div v-if="!isInputAllowed" class="overlay">
+    <div v-if="!isInputAllowed" class="overlay">
       <p>{{ blockingMessage }}</p>
-    </div> -->
+    </div>
     <FeedbackTimer class="timer" :isInputAllowed="isInputAllowed" @pauseTimerEvent="handlePauseTimer"
       @resumeTimerEvent="handleResumeTimer" />
     <FeedbackCounter ref="feedbackCounter" class="feedback-counter" :givenFeedbacks="feedbackCount" />
@@ -65,23 +65,30 @@ export default {
       feedbackCount: 0,
       group1: [],
       group2: [],
-      connections: [],
+      preferences: [],
       numberOfSuggestions: 100,
       totalNumberOfSuggestions: 100,
       beta: 0.85,
     }
   },
   methods: {
-    updateConnections() {
-      this.connections = [];
+    updatePreferences(preference) {
+      this.preferences = [];
       this.group1.forEach(point1 => {
         this.group2.forEach(point2 => {
-          this.connections.push([point1.id, point2.id]);
+          this.preferences.push({
+            id1: point1.id,
+            id2: point2.id,
+            preference: preference,
+          });
         });
       });
-      this.$refs.embeddingView.updateConnections(this.connections);
+      this.$refs.radialHierarchy.updatePreferences(this.preferences);
     },
     handleGroupKeyPressed(key) {
+      if (!this.isInputAllowed || this.group1.length === 0 || this.group2.length === 0) {
+        return;
+      }
       const data = {
         group1: this.group1.map(video => video.id),
         group2: this.group2.map(video => video.id),
@@ -90,12 +97,12 @@ export default {
 
       axios.post('http://localhost:5000/preference', data)
         .then(response => {
+          this.updatePreferences(key == 'ArrowLeft' ? 1.0 : (key == 'ArrowRight' ? 0.0 : 0.5));
           this.feedbackCount = response.data.feedback_count;
-          this.updateConnections();
           this.group1 = [];
           this.group2 = [];
-          this.$refs.embeddingView.setGroup1([]);
-          this.$refs.embeddingView.setGroup2([]);
+          this.$refs.radialHierarchy.setGroup1([]);
+          this.$refs.radialHierarchy.setGroup2([]);
         })
         .catch(error => {
           console.error('Error:', error);
@@ -111,10 +118,7 @@ export default {
     },
     handleInputSent() {
       this.isInputAllowed = false;
-      if (this.$refs.embeddingView) {
-        this.connections = [];
-        this.$refs.embeddingView.updateConnections(this.connections);
-      }
+      this.preferences = [];
       if (this.$refs.videoPlayer) {
         this.$refs.videoPlayer.feedbackReceived = true;
       }
@@ -142,8 +146,8 @@ export default {
       if (this.$refs.videoPlayer) {
         this.$refs.videoPlayer.pauseStream();
       }
-      if (this.$refs.embeddingView) {
-        this.$refs.embeddingView.pauseStream();
+      if (this.$refs.radialHierarchy) {
+        this.$refs.radialHierarchy.pauseStream();
       }
     },
     handleResumeTimer() {
@@ -152,8 +156,8 @@ export default {
       if (this.$refs.videoPlayer) {
         this.$refs.videoPlayer.resumeStream();
       }
-      if (this.$refs.embeddingView) {
-        this.$refs.embeddingView.resumeStream();
+      if (this.$refs.radialHierarchy) {
+        this.$refs.radialHierarchy.resumeStream();
       }
     },
     handleGroup1Updated(group1) {

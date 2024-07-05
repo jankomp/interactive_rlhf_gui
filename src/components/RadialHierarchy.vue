@@ -12,6 +12,7 @@ export default {
         return {
             fragmentData: null,
             suggestionData: null,
+            preferenceData: null,
             group1: [],
             group2: [],
             width: this.chartSize,
@@ -23,14 +24,17 @@ export default {
             outerRadius: null,
             leafNodeWidth: null,
             previousNumberOfSuggestions: 0,
+            descendants: null,
+            line: null,
         };
     },
     mounted() {
-        //this.resumeStream();
+        this.resumeStream();
         window.addEventListener('contextmenu', (e) => {
             e.preventDefault();
         });
-        this.createChart();
+        //this.createChart();
+        this.fetchPreferences();
     },
 
     methods: {
@@ -50,13 +54,6 @@ export default {
             this.$emit('suggestionDataLoaded', totalNumberOfSuggestions);
         },
         async createChart() {
-            const response = await fetch('clustered_fragments.json');
-            this.fragmentData = await response.json();
-            //console.log(this.fragment_data);
-            const response2 = await fetch('active_learning_suggestions.json');
-            this.suggestionData = await response2.json();
-            this.suggestionDataLoaded(this.suggestionData.length);
-            //console.log(this.suggestion_data);
             if (this.fragmentData) {
                 const depth = d3.hierarchy(this.fragmentData).height;
 
@@ -100,19 +97,19 @@ export default {
                 }
             });
 
-            const descendants = this.root.descendants().filter(d => d.depth > 0);
+            this.descendants = this.root.descendants().filter(d => d.depth > 0);
             const maxVariance = this.suggestionData[0].var;
 
-            // Create a radial line generator with a bundling factor of 0.85
-            const line = d3.lineRadial()
+            // Create a radial this.line generator with a bundling factor of 0.85
+            this.line = d3.lineRadial()
                 .curve(d3.curveBundle.beta(this.beta))
                 .radius(d => this.startRadius + d.y)
                 .angle(d => d.x);
 
             // Create the edge bundles
             const edgeBundles = this.suggestionData.slice(0, this.numberOfSuggestions).map(sug => {
-                const node1 = descendants.find(node => node.data.id === sug.id1);
-                const node2 = descendants.find(node => node.data.id === sug.id2);
+                const node1 = this.descendants.find(node => node.data.id === sug.id1);
+                const node2 = this.descendants.find(node => node.data.id === sug.id2);
                 const estVar = sug.var / maxVariance;
 
                 // Find the common ancestor of node1 and node2
@@ -122,7 +119,7 @@ export default {
                 }
 
                 // Create a list of points from node1, up to the ancestor, and then down to node2
-                const points = [...getAncestors(node1, ancestor), ancestor, ...getDescendants(node2, ancestor)].map(node => {
+                const points = [...this.getAncestors(node1, ancestor), ancestor, ...this.getDescendants(node2, ancestor)].map(node => {
                     return { x: node.x, y: node.y, opacity: estVar };
                 });
 
@@ -136,7 +133,7 @@ export default {
                         .data(edgeBundles)
                         .enter().append("path")
                         .attr("class", "link")
-                        .attr("d", line)
+                        .attr("d", this.line)
                         .attr("stroke", "#555")
                         .attr("stroke-opacity", d => d[0].opacity)
                         .attr("stroke-width", 0.2)
@@ -153,36 +150,83 @@ export default {
                     .join(
                         enter => enter.append("path")
                             .attr("class", "link")
-                            .attr("d", line)
+                            .attr("d", this.line)
                             .attr("stroke", "#555")
                             .attr("stroke-opacity", d => d[0].opacity)
                             .attr("stroke-width", 0.2)
                             .attr("fill", "none"),
                         update => update
-                            .attr("d", line)
+                            .attr("d", this.line)
                             .attr("stroke-opacity", d => d[0].opacity),
                         exit => exit.remove()
                     );
             }
-
-            // Helper functions to get the ancestors and descendants of a node
-            function getAncestors(node, ancestor) {
-                const ancestors = [];
-                while (node !== ancestor) {
-                    ancestors.push(node);
-                    node = node.parent;
-                }
-                return ancestors;
+            this.drawPreferences();
+        },
+        drawPreferences() {
+            if (!this.preferenceData || this.preferenceData.length === 0 || !this.svg)  {
+                return;
             }
+            // Create a color scale for the preference values
+            const colorScale = d3.scaleLinear()
+                .domain([0, 0.5, 1])
+                .range(["yellow", "lightgreen", "green"]);
 
-            function getDescendants(node, ancestor) {
-                const descendants = [];
-                while (node !== ancestor) {
-                    descendants.unshift(node);
-                    node = node.parent;
+            // Create the preference edge bundles
+            const preferenceEdgeBundles = this.preferenceData.map(pref => {
+                if (!pref || !this.descendants) {
+                    return [];
                 }
-                return descendants;
+                const node1 = this.descendants.find(node => node.data.id === pref.id1);
+                const node2 = this.descendants.find(node => node.data.id === pref.id2);
+
+                // Find the common ancestor of node1 and node2
+                let ancestor = node1;
+                while (!ancestor.descendants().includes(node2)) {
+                    ancestor = ancestor.parent;
+                }
+
+                // Create a list of points from node1, up to the ancestor, and then down to node2
+                const points = [...this.getAncestors(node1, ancestor), ancestor, ...this.getDescendants(node2, ancestor)].map(node => {
+                    return { x: node.x, y: node.y, color: colorScale(pref.preference) };
+                });
+
+                return points;
+            });
+            //TODO: draw a gradient for the edge (from yellow to green)
+
+            // Add the preference edges to the SVG
+            this.svg.selectAll(".preferenceLink")
+                .data(preferenceEdgeBundles)
+                .join(
+                    enter => enter.append("path")
+                        .attr("class", "preferenceLink")
+                        .attr("d", this.line)
+                        .attr("stroke", d => d[0].color)
+                        .attr("stroke-width", 0.2)
+                        .attr("fill", "none"),
+                    update => update
+                        .attr("d", this.line)
+                        .attr("stroke", d => d[0].color),
+                    exit => exit.remove()
+                );
+
+        },
+        getAncestors(node, ancestor) {
+            const ancestors = [];
+            while (node !== ancestor) {
+                ancestors.push(node);
+                node = node.parent;
             }
+            return ancestors;
+        },
+        getDescendants(node, ancestor) {
+            const descendants = [];
+            while (node !== ancestor) {
+                descendants.unshift(node);
+                node = node.parent;
+            }
+            return descendants;
         },
         createIcicleChart() {
             // Create the mirrored outer tree layout
@@ -376,10 +420,9 @@ export default {
                 })
                 .then(data => {
                     if (data) {
-                        console.log('Data received:', data);
+                        //console.log('Data received:', data);
                         this.fragmentData = data;
-                        this.createChart();
-                        this.fragmentsReceived();
+                        this.fetchSuggestionData();
                     } else {
                         console.log('No data received');
                         this.feedbackComplete();
@@ -388,6 +431,60 @@ export default {
                 .catch(error => {
                     console.error('Error:', error);
                 });
+        },
+        fetchSuggestionData() {
+            fetch('http://localhost:5000/suggestions')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data) {
+                        //console.log('Data received:', data);
+                        this.suggestionData = data;
+                        this.suggestionDataLoaded(this.suggestionData.length);
+                        this.createChart();
+                        this.fragmentsReceived();
+                    } else {
+                        console.log('No data received');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        },
+        fetchPreferences() {
+            fetch('http://localhost:5000/given_preferences')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data) {
+                        //console.log('Data received:', data);
+                        this.preferenceData = data;
+                        this.drawPreferences();
+                    } else {
+                        console.log('No data received');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        },
+        updatePreferences(newPreferences) {
+            if (newPreferences === null || newPreferences === undefined) {
+                return;
+            }
+            if (this.preferenceData === null || this.preferenceData === undefined) {
+                this.preferenceData = [];
+            }
+            this.preferenceData = this.preferenceData.concat(newPreferences);
+            this.drawPreferences();
         },
     },
 
