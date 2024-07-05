@@ -3,7 +3,9 @@
 </template>
 
 <script>
+
 import * as d3 from "d3";
+import { quads, samples, lineJoin } from './gradientUtils';
 
 export default {
     name: "RadialHierarchy",
@@ -100,7 +102,7 @@ export default {
             this.descendants = this.root.descendants().filter(d => d.depth > 0);
             const maxVariance = this.suggestionData[0].var;
 
-            // Create a radial this.line generator with a bundling factor of 0.85
+            // Create a radial this.line generator with a bundling factor of beta
             this.line = d3.lineRadial()
                 .curve(d3.curveBundle.beta(this.beta))
                 .radius(d => this.startRadius + d.y)
@@ -164,21 +166,25 @@ export default {
             this.drawPreferences();
         },
         drawPreferences() {
-            if (!this.preferenceData || this.preferenceData.length === 0 || !this.svg)  {
+            if (!this.preferenceData || this.preferenceData.length === 0 || !this.svg) {
                 return;
             }
-            // Create a color scale for the preference values
-            const colorScale = d3.scaleLinear()
-                .domain([0, 0.5, 1])
-                .range(["yellow", "lightgreen", "green"]);
+            // Create a color scale for the gradient
+            const color = d3.scaleLinear()
+                .domain([0, 1])
+                .range(["green", "yellow"])
+                .interpolate(d3.interpolateRgb);
 
             // Create the preference edge bundles
             const preferenceEdgeBundles = this.preferenceData.map(pref => {
                 if (!pref || !this.descendants) {
                     return [];
                 }
-                const node1 = this.descendants.find(node => node.data.id === pref.id1);
-                const node2 = this.descendants.find(node => node.data.id === pref.id2);
+                const node1id = pref.preference == 1.0 ? pref.id1 : pref.id2;
+                const node2id = pref.preference == 1.0 ? pref.id2 : pref.id1;
+                
+                const node1 = this.descendants.find(node => node.data.id === node1id);
+                const node2 = this.descendants.find(node => node.data.id === node2id);
 
                 // Find the common ancestor of node1 and node2
                 let ancestor = node1;
@@ -188,29 +194,52 @@ export default {
 
                 // Create a list of points from node1, up to the ancestor, and then down to node2
                 const points = [...this.getAncestors(node1, ancestor), ancestor, ...this.getDescendants(node2, ancestor)].map(node => {
-                    return { x: node.x, y: node.y, color: colorScale(pref.preference) };
+                    return { x: node.x, y: node.y, color: color(pref.preference) };
                 });
 
                 return points;
             });
-            //TODO: draw a gradient for the edge (from yellow to green)
+            // draw a gradient for the edge (from yellow to green)
+            // Generate the line as before
+            this.line = d3.lineRadial()
+                .curve(d3.curveBundle.beta(this.beta))
+                .radius(d => this.startRadius + d.y)
+                .angle(d => d.x);
 
-            // Add the preference edges to the SVG
-            this.svg.selectAll(".preferenceLink")
+            // Generate the lines and get the SVG Path Elements
+            var pathElements = this.svg.selectAll(".preferenceLink")
                 .data(preferenceEdgeBundles)
-                .join(
-                    enter => enter.append("path")
-                        .attr("class", "preferenceLink")
-                        .attr("d", this.line)
-                        .attr("stroke", d => d[0].color)
-                        .attr("stroke-width", 0.2)
-                        .attr("fill", "none"),
-                    update => update
-                        .attr("d", this.line)
-                        .attr("stroke", d => d[0].color),
-                    exit => exit.remove()
-                );
+                .enter()
+                .append("path")
+                .attr("d", this.line)
+                .attr("class", "preferenceLink")
+                .attr("stroke", d => d[0].color)
+                .attr("stroke-width", 0.2)
+                .attr("fill", "none")
+                .nodes(); // Get the SVG Path Elements
 
+            // Generate quads from the SVG Path Elements
+            var qs = pathElements.map(pathElement => {
+                var s = samples(pathElement, 2);
+                var q = quads(s);
+                // Add the t property to each quad
+                for (var i = 0; i < q.length; i++) {
+                    q[i].t = i / (q.length - 1);
+                }
+                return q;
+            });
+            // Flatten the qs array
+            var flatQs = [].concat.apply([], qs);
+
+            // Update the lines with the quads
+            this.svg.selectAll(".preferenceLink")
+                .data(flatQs)
+                .enter().append("path")
+                .attr("d", d => {
+                    return lineJoin(d[0], d[1], d[2], d[3], 0.2);
+                })
+                .style("fill", function(d) { return color(d.t); })
+                .style("stroke", function(d) { return color(d.t); });
         },
         getAncestors(node, ancestor) {
             const ancestors = [];
