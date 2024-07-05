@@ -169,10 +169,17 @@ export default {
             if (!this.preferenceData || this.preferenceData.length === 0 || !this.svg) {
                 return;
             }
+            // Clear existing preferences
+            this.svg.selectAll(".preferenceLink").remove(); // the existing curves are somehow not being removed
             // Create a color scale for the gradient
-            const color = d3.scaleLinear()
+            const greenToYellow = d3.scaleLinear()
                 .domain([0, 1])
                 .range(["green", "yellow"])
+                .interpolate(d3.interpolateRgb);
+
+            const yellowToGreen = d3.scaleLinear()
+                .domain([0, 1])
+                .range(["yellow", "green"])
                 .interpolate(d3.interpolateRgb);
 
             // Create the preference edge bundles
@@ -180,11 +187,9 @@ export default {
                 if (!pref || !this.descendants) {
                     return [];
                 }
-                const node1id = pref.preference == 1.0 ? pref.id1 : pref.id2;
-                const node2id = pref.preference == 1.0 ? pref.id2 : pref.id1;
-                
-                const node1 = this.descendants.find(node => node.data.id === node1id);
-                const node2 = this.descendants.find(node => node.data.id === node2id);
+
+                const node1 = this.descendants.find(node => node.data.id === pref.id1);
+                const node2 = this.descendants.find(node => node.data.id === pref.id2);
 
                 // Find the common ancestor of node1 and node2
                 let ancestor = node1;
@@ -194,13 +199,13 @@ export default {
 
                 // Create a list of points from node1, up to the ancestor, and then down to node2
                 const points = [...this.getAncestors(node1, ancestor), ancestor, ...this.getDescendants(node2, ancestor)].map(node => {
-                    return { x: node.x, y: node.y, color: color(pref.preference) };
+                    return { x: node.x, y: node.y };
                 });
 
-                return points;
+                return { points, preference: pref.preference };
             });
-            // draw a gradient for the edge (from yellow to green)
-            // Generate the line as before
+
+            // Generate the line
             this.line = d3.lineRadial()
                 .curve(d3.curveBundle.beta(this.beta))
                 .radius(d => this.startRadius + d.y)
@@ -211,35 +216,74 @@ export default {
                 .data(preferenceEdgeBundles)
                 .enter()
                 .append("path")
-                .attr("d", this.line)
+                .attr("d", d => this.line(d.points))
                 .attr("class", "preferenceLink")
-                .attr("stroke", d => d[0].color)
                 .attr("stroke-width", 0.2)
                 .attr("fill", "none")
                 .nodes(); // Get the SVG Path Elements
 
             // Generate quads from the SVG Path Elements
-            var qs = pathElements.map(pathElement => {
+            var qs = pathElements.map((pathElement, index) => {
                 var s = samples(pathElement, 2);
                 var q = quads(s);
-                // Add the t property to each quad
+                var pref = preferenceEdgeBundles[index].preference;
+                // Add the t property to each quad and pass along the preference value
                 for (var i = 0; i < q.length; i++) {
                     q[i].t = i / (q.length - 1);
+                    q[i].preference = pref;
                 }
                 return q;
             });
             // Flatten the qs array
             var flatQs = [].concat.apply([], qs);
 
-            // Update the lines with the quads
-            this.svg.selectAll(".preferenceLink")
-                .data(flatQs)
-                .enter().append("path")
-                .attr("d", d => {
-                    return lineJoin(d[0], d[1], d[2], d[3], 0.2);
+    // Update the lines with the quads
+    this.svg.selectAll(".preferenceLink")
+        .data(flatQs)
+        .join(
+            enter => enter.append("path")
+                .attr("class", "preferenceLink")
+                .attr("d", d => lineJoin(d[0], d[1], d[2], d[3], 0.2))
+                .style("fill", d => {
+                    if (d.preference === 0.0) {
+                        return yellowToGreen(d.t);
+                    } else if (d.preference === 1.0) {
+                        return greenToYellow(d.t);
+                    } else {
+                        return d3.interpolateRgb("green", "yellow")(0.5);
+                    }
                 })
-                .style("fill", function(d) { return color(d.t); })
-                .style("stroke", function(d) { return color(d.t); });
+                .style("stroke", d => {
+                    if (d.preference === 0.0) {
+                        return yellowToGreen(d.t);
+                    } else if (d.preference === 1.0) {
+                        return greenToYellow(d.t);
+                    } else {
+                        return d3.interpolateRgb("green", "yellow")(0.5);
+                    }
+                }),
+            update => update
+                .attr("d", d => lineJoin(d[0], d[1], d[2], d[3], 0.2))
+                .style("fill", d => {
+                    if (d.preference === 0.0) {
+                        return yellowToGreen(d.t);
+                    } else if (d.preference === 1.0) {
+                        return greenToYellow(d.t);
+                    } else {
+                        return d3.interpolateRgb("green", "yellow")(0.5);
+                    }
+                })
+                .style("stroke", d => {
+                    if (d.preference === 0.0) {
+                        return yellowToGreen(d.t);
+                    } else if (d.preference === 1.0) {
+                        return greenToYellow(d.t);
+                    } else {
+                        return d3.interpolateRgb("green", "yellow")(0.5);
+                    }
+                }),
+            exit => exit.remove()
+        );
         },
         getAncestors(node, ancestor) {
             const ancestors = [];
@@ -543,6 +587,7 @@ export default {
             handler() {
                 this.$nextTick(() => {
                     this.createEdgeBundles(true);
+                    this.drawPreferences();
                 });
             },
             deep: true

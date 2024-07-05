@@ -10,7 +10,7 @@
           @feedbackComplete="handleInputSent" @suggestionDataLoaded="handleSuggestionDataLoaded"
           :numberOfSuggestions="numberOfSuggestions" :beta="beta" />
         <SliderInput class="full-width-slider" :sliderValueName="'Number of Suggestions'" :scaleFactor="1"
-          :minSliderValue="1" :maxSliderValue="totalNumberOfSuggestions" :initialValue="totalNumberOfSuggestions"
+          :minSliderValue="1" :maxSliderValue="totalNumberOfSuggestions" :initialValue="numberOfSuggestions"
           :logarithmic="true" @sliderValueChanged="handleNumberOfSuggestionsChange" />
         <SliderInput class="full-width-slider" :sliderValueName="'Beta (Bundling strength)'" :scaleFactor="100"
           :minSliderValue="0.0" :maxSliderValue="0.99" :initialValue="0.85" :logarithmic="false"
@@ -66,7 +66,7 @@ export default {
       group1: [],
       group2: [],
       preferences: [],
-      numberOfSuggestions: 100,
+      numberOfSuggestions: 10,
       totalNumberOfSuggestions: 100,
       beta: 0.85,
     }
