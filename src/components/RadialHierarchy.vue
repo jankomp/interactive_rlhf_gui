@@ -1,5 +1,15 @@
 <template>
-    <div ref="chartContainer"></div>
+    <div>
+        <div ref="chartContainer"></div>
+        <div>
+            <input type="checkbox" id="suggestionsToggle" v-model="showSuggestions">
+            <label for="suggestionsToggle">Show Suggestions</label>
+        </div>
+        <div>
+            <input type="checkbox" id="preferencesToggle" v-model="showPreferences">
+            <label for="preferencesToggle">Show Preferences</label>
+        </div>
+    </div>
 </template>
 
 <script>
@@ -28,6 +38,8 @@ export default {
             previousNumberOfSuggestions: 0,
             descendants: null,
             line: null,
+            showSuggestions: true,
+            showPreferences: true,
         };
     },
     mounted() {
@@ -80,6 +92,10 @@ export default {
             }
         },
         drawSuggestions(redraw = false) {
+            if (!this.showSuggestions) {
+                this.svg.selectAll(".suggestionLink").remove();
+                return;
+            }
             // Set the x value of each leaf node
             let leafNodeIndex = 0;
             this.root.eachAfter(node => {
@@ -165,6 +181,10 @@ export default {
             this.drawPreferences();
         },
         drawPreferences() {
+            if (!this.showPreferences) {
+                this.svg.selectAll(".preferenceLink").remove();
+                return;
+            }
             if (!this.preferenceData || this.preferenceData.length === 0 || !this.svg) {
                 return;
             }
@@ -558,7 +578,13 @@ export default {
                 });
             },
             deep: true
-        }
+        },
+        showSuggestions() {
+            this.drawSuggestions(true);
+        },
+        showPreferences() {
+            this.drawPreferences();
+        },
     }
 };
 </script>

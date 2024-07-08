@@ -203,7 +203,7 @@ export default {
 }
 
 .video-group-player {
-  min-width: 600px;
+  min-width: 610px;
 }
 
 .timer {
