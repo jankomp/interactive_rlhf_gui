@@ -4,6 +4,7 @@
 
 <script>
 import * as d3 from "d3";
+import { Path2D } from "./HierarchicalEdgeBundling.js";
 
 export default {
     name: "RadialHierarchy",
@@ -164,15 +165,24 @@ export default {
             this.drawPreferences();
         },
         drawPreferences() {
-            if (!this.preferenceData || this.preferenceData.length === 0 || !this.svg)  {
+            if (!this.preferenceData || this.preferenceData.length === 0 || !this.svg) {
                 return;
             }
-            // Create a color scale for the preference values
-            const colorScale = d3.scaleLinear()
-                .domain([0, 0.5, 1])
-                .range(["yellow", "lightgreen", "green"]);
 
-            // Create the preference edge bundles
+            // Helper function to split a path into segments
+            function splitPath(line, points, k) {
+                const path = new Path2D();
+                line.context(path)(points); // Ensure this works as expected
+
+                return Array.from(path.split(k));
+            }
+
+            // Clear previous gradients and definitions
+            this.svg.selectAll("defs").remove();
+
+            const k = 6; // 2^k color segments per curve
+
+            // Create the preference edge bundles and draw them
             const preferenceEdgeBundles = this.preferenceData.map(pref => {
                 if (!pref || !this.descendants) {
                     return [];
@@ -187,30 +197,53 @@ export default {
                 }
 
                 // Create a list of points from node1, up to the ancestor, and then down to node2
-                const points = [...this.getAncestors(node1, ancestor), ancestor, ...this.getDescendants(node2, ancestor)].map(node => {
-                    return { x: node.x, y: node.y, color: colorScale(pref.preference) };
+                return [...this.getAncestors(node1, ancestor), ancestor, ...this.getDescendants(node2, ancestor)].map(node => {
+                    return { x: node.x, y: node.y };
                 });
-
-                return points;
             });
-            //TODO: draw a gradient for the edge (from yellow to green)
 
-            // Add the preference edges to the SVG
-            this.svg.selectAll(".preferenceLink")
-                .data(preferenceEdgeBundles)
-                .join(
-                    enter => enter.append("path")
-                        .attr("class", "preferenceLink")
-                        .attr("d", this.line)
-                        .attr("stroke", d => d[0].color)
-                        .attr("stroke-width", 0.2)
-                        .attr("fill", "none"),
-                    update => update
-                        .attr("d", this.line)
-                        .attr("stroke", d => d[0].color),
-                    exit => exit.remove()
-                );
+            // Generate path segments for each preference edge bundle
+            const pathSegments = preferenceEdgeBundles.map((points, index) => {
+                const segments = splitPath(this.line, points, k);
+                // Associate the preference data with the segments
+                segments.forEach(segment => {
+                    segment.preference = this.preferenceData[index].preference;
+                });
+                return segments;
+            });
 
+            // Number of segments
+            const numSegments = Math.pow(2, k);
+
+            // Add the line segments to the SVG
+            this.svg.append("g")
+                .attr("fill", "none")
+                .selectAll(".preferenceLink")
+                .data(pathSegments)
+                .join("g")
+                .selectAll("path")
+                .data(d => d)
+                .join("path")
+                .style("mix-blend-mode", "darken")
+                .attr("stroke", (d, i) => {
+                    // Get the preference value from the segment data
+                    const preference = d.preference;
+
+                    // Interpolate color based on preference value
+                    if (preference === 1.0) {
+                        // Interpolate from red at id1 to yellow at id2
+                        return d3.interpolate("#ff0000", "#ffff00")(i / (numSegments - 1));
+                    } else if (preference === 0.0) {
+                        // Interpolate from yellow at id1 to red at id2
+                        return d3.interpolate("#ffff00", "#ff0000")(i / (numSegments - 1));
+                    } else {
+                        // No interpolation, all segments are the same orange
+                        return "#ffa500";
+                    }
+                })
+                .attr("stroke-width", 1)
+                .attr("stroke-opacity", 1)
+                .attr("d", d => d);
         },
         getAncestors(node, ancestor) {
             const ancestors = [];
