@@ -35,7 +35,6 @@ export default {
         window.addEventListener('contextmenu', (e) => {
             e.preventDefault();
         });
-        //this.createChart();
         this.fetchPreferences();
     },
 
@@ -77,10 +76,10 @@ export default {
                     .attr("transform", `translate(${this.width / 2},${this.height / 2})`);
 
                 this.createIcicleChart();
-                this.createEdgeBundles();
+                this.drawSuggestions();
             }
         },
-        createEdgeBundles(redraw = false) {
+        drawSuggestions(redraw = false) {
             // Set the x value of each leaf node
             let leafNodeIndex = 0;
             this.root.eachAfter(node => {
@@ -131,10 +130,10 @@ export default {
             if (!redraw) {
                 if (this.numberOfSuggestions > this.previousNumberOfSuggestions) {
                     // Add new edges
-                    this.svg.selectAll(".link")
+                    this.svg.selectAll(".suggestionLink")
                         .data(edgeBundles)
                         .enter().append("path")
-                        .attr("class", "link")
+                        .attr("class", "suggestionLink")
                         .attr("d", this.line)
                         .attr("stroke", "#555")
                         .attr("stroke-opacity", d => d[0].opacity)
@@ -142,16 +141,16 @@ export default {
                         .attr("fill", "none");
                 } else if (this.numberOfSuggestions < this.previousNumberOfSuggestions) {
                     // Remove excess edges
-                    this.svg.selectAll(".link")
+                    this.svg.selectAll(".suggestionLink")
                         .data(edgeBundles)
                         .exit().remove();
                 }
             } else {
-                this.svg.selectAll(".link")
+                this.svg.selectAll(".suggestionLink")
                     .data(edgeBundles)
                     .join(
                         enter => enter.append("path")
-                            .attr("class", "link")
+                            .attr("class", "suggestionLink")
                             .attr("d", this.line)
                             .attr("stroke", "#555")
                             .attr("stroke-opacity", d => d[0].opacity)
@@ -216,36 +215,42 @@ export default {
 
             // Number of segments
             const numSegments = Math.pow(2, k);
+            function interpolateColor(preference, i) {
+                if (preference === 1.0) {
+                    return d3.interpolate("#ff0000", "#ffff00")(i / (numSegments - 1));
+                } else if (preference === 0.0) {
+                    return d3.interpolate("#ffff00", "#ff0000")(i / (numSegments - 1));
+                } else {
+                    return "#ffa500";
+                }
+            }
 
             // Add the line segments to the SVG
-            this.svg.append("g")
-                .attr("fill", "none")
+            this.svg.select("g")
                 .selectAll(".preferenceLink")
                 .data(pathSegments)
-                .join("g")
-                .selectAll("path")
-                .data(d => d)
-                .join("path")
-                .style("mix-blend-mode", "darken")
-                .attr("stroke", (d, i) => {
-                    // Get the preference value from the segment data
-                    const preference = d.preference;
+                .join(
+                    enter => enter.append("g")
+                        .attr("class", "preferenceLink")
+                        .selectAll("path")
+                        .data(d => d)
+                        .join("path")
+                        .style("mix-blend-mode", "darken")
+                        .attr("stroke", (d, i) => {
+                            return interpolateColor(d.preference, i);
+                        })
+                        .attr("stroke-width", 1)
+                        .attr("stroke-opacity", 1)
+                        .attr("d", d => d),
+                    update => update.selectAll("path")
+                        .data(d => d)
+                        .join("path")
+                        .attr("d", d => d),
+                    exit => exit.remove()
+                );
 
-                    // Interpolate color based on preference value
-                    if (preference === 1.0) {
-                        // Interpolate from red at id1 to yellow at id2
-                        return d3.interpolate("#ff0000", "#ffff00")(i / (numSegments - 1));
-                    } else if (preference === 0.0) {
-                        // Interpolate from yellow at id1 to red at id2
-                        return d3.interpolate("#ffff00", "#ff0000")(i / (numSegments - 1));
-                    } else {
-                        // No interpolation, all segments are the same orange
-                        return "#ffa500";
-                    }
-                })
-                .attr("stroke-width", 1)
-                .attr("stroke-opacity", 1)
-                .attr("d", d => d);
+            // Update lastDrawnBundleIndex
+            this.lastDrawnBundleIndex = this.preferenceData.length - 1;
         },
         getAncestors(node, ancestor) {
             const ancestors = [];
@@ -539,7 +544,7 @@ export default {
         numberOfSuggestions: {
             handler() {
                 this.$nextTick(() => {
-                    this.createEdgeBundles();
+                    this.drawSuggestions();
                     this.previousNumberOfSuggestions = this.numberOfSuggestions;
                 });
             },
@@ -548,7 +553,7 @@ export default {
         beta: {
             handler() {
                 this.$nextTick(() => {
-                    this.createEdgeBundles(true);
+                    this.drawSuggestions(true);
                     this.drawPreferences();
                 });
             },
