@@ -3,6 +3,7 @@
 </template>
 
 <script>
+
 import * as d3 from "d3";
 import { Path2D } from "./HierarchicalEdgeBundling.js";
 
@@ -101,7 +102,7 @@ export default {
             this.descendants = this.root.descendants().filter(d => d.depth > 0);
             const maxVariance = this.suggestionData[0].var;
 
-            // Create a radial this.line generator with a bundling factor of 0.85
+            // Create a radial this.line generator with a bundling factor of beta
             this.line = d3.lineRadial()
                 .curve(d3.curveBundle.beta(this.beta))
                 .radius(d => this.startRadius + d.y)
@@ -187,6 +188,7 @@ export default {
                 if (!pref || !this.descendants) {
                     return [];
                 }
+
                 const node1 = this.descendants.find(node => node.data.id === pref.id1);
                 const node2 = this.descendants.find(node => node.data.id === pref.id2);
 
@@ -547,6 +549,7 @@ export default {
             handler() {
                 this.$nextTick(() => {
                     this.createEdgeBundles(true);
+                    this.drawPreferences();
                 });
             },
             deep: true
