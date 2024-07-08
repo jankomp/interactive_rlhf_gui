@@ -1,15 +1,26 @@
 <template>
     <div class="keypad">
-        <div class="key top" :class="{ active: activeKey === 'ArrowUp' }" @click="onKeyClick('ArrowUp')" title="Equal">
-            <div class="triangle up"></div>
+        <div class="key-container">
+            <div class="annotation">Equal</div>
+            <div class="key top" :class="{ active: activeKey === 'ArrowUp' }" @click="onKeyClick('ArrowUp')" title="Equal">
+                <div class="triangle up"></div>
+            </div>
         </div>
         <div class="key-row">
-            <div class="key" :class="{ active: activeKey === 'ArrowLeft' }" @click="onKeyClick('ArrowLeft')" title="Left">
-                <div class="triangle left"></div>
+            <div class="key-container">
+                <div class="key row" :class="{ active: activeKey === 'ArrowLeft' }" @click="onKeyClick('ArrowLeft')"
+                    title="Left">
+                    <div class="triangle left"></div>
+                </div>
+                <div class="annotation">Left group</div>
             </div>
             <div class="key placeholder"></div>
-            <div class="key" :class="{ active: activeKey === 'ArrowRight' }" @click="onKeyClick('ArrowRight')" title="Right">
-                <div class="triangle right"></div>
+            <div class="key-container">
+                <div class="key row" :class="{ active: activeKey === 'ArrowRight' }" @click="onKeyClick('ArrowRight')"
+                    title="Right">
+                    <div class="triangle right"></div>
+                </div>
+                <div class="annotation">Right group</div>
             </div>
         </div>
     </div>
@@ -71,11 +82,18 @@ export default {
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-left: 25px;
+    margin-right: 25px;
 }
 
 .key-row {
     display: flex;
     justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.key-container {
+    position: relative;
 }
 
 .key {
@@ -86,7 +104,22 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 10px;
+}
+
+.annotation {
+    position: absolute;
+    font-size: 12px;
+    color: black;
+    text-align: center;
+    width: 100%;
+}
+
+.top {
+    margin-top: 20px;
+}
+
+.row {
+    margin-bottom: 10px;
 }
 
 .triangle {
