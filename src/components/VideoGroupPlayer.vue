@@ -1,7 +1,11 @@
 <template>
     <div id="app" class="video-group">
         <div v-for="video in videoGroup" :key="video.id" class="video-container">
-            <button class="close-button" @click="removeVideo(video.id)">x</button>
+            <button class="close-button" @click="removeVideo(video.id)" title="Remove fragment">x</button>
+            <button class="group-change-button" :class="{ 'right-arrow': leftGroup, 'left-arrow': !leftGroup }" @click="changeGroups(video)" title="Switch groups">
+                <span v-if="leftGroup">&gt;</span>
+                <span v-else>&lt;</span>
+            </button>
             <video ref="video" :src="getVideoUrl(video.video_path)" width="300" @ended="waitAndLoop"
                 @loadedmetadata="setPlaybackRate" @error="handleVideoError" autoplay muted></video>
         </div>
@@ -13,6 +17,10 @@ export default {
     props: {
         videoGroup: {
             type: Array,
+            required: true
+        },
+        leftGroup: {
+            type: Boolean,
             required: true
         }
     },
@@ -42,7 +50,10 @@ export default {
         },
         handleVideoError(event) {
             console.error('Error while fetching the video:', event);
-        }
+        },
+        changeGroups(video) {
+            this.$emit('changeGroups', video);
+        },
     }
 };
 </script>
@@ -77,5 +88,24 @@ export default {
 video {
     margin: 0;
     padding: 0;
+}
+
+.group-change-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.right-arrow {
+    right: 0;
+}
+
+.left-arrow {
+    left: 0;
 }
 </style>

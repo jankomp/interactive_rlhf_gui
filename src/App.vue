@@ -16,9 +16,9 @@
           :minSliderValue="0.0" :maxSliderValue="0.99" :initialValue="0.85" :logarithmic="false"
           @sliderValueChanged="handleBetaChange" />
       </div>
-      <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo" />
+      <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo" :leftGroup="true" @changeGroups="handleChangeGroup1"/>
       <GroupKeyPad @keyPressed="handleGroupKeyPressed" :isInputAllowed="isInputAllowed" />
-      <VideoGroupPlayer class="video-group-player" :videoGroup="group2" @removeVideo="handleGroup2RemoveVideo" />
+      <VideoGroupPlayer class="video-group-player" :videoGroup="group2" @removeVideo="handleGroup2RemoveVideo" :leftGroup="false" @changeGroups="handleChangeGroup2"/>
     </div>
     <div class="pairwise-comparison" v-if="$feedback === 'pairwise'">
       <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @noVideoReceived="handleNoVideoReceived"
@@ -115,6 +115,18 @@ export default {
     handleGroup2RemoveVideo(id) {
       this.group2 = this.group2.filter(video => video.id !== id);
       this.$refs.radialHierarchy.setGroup2(this.group2);
+    },
+    handleChangeGroup1(newVideo) {
+      this.group1 = this.group1.filter(video => video.id !== newVideo.id);
+      this.$refs.radialHierarchy.setGroup1(this.group1);
+      this.group2.push(newVideo)
+      this.$refs.radialHierarchy.setGroup2(this.group2);
+    },
+    handleChangeGroup2(newVideo) {
+      this.group2 = this.group2.filter(video => video.id !== newVideo.id);
+      this.$refs.radialHierarchy.setGroup2(this.group2);
+      this.group1.push(newVideo)
+      this.$refs.radialHierarchy.setGroup1(this.group1);
     },
     handleInputSent() {
       this.isInputAllowed = false;

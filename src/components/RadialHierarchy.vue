@@ -237,11 +237,11 @@ export default {
             const numSegments = Math.pow(2, k);
             function interpolateColor(preference, i) {
                 if (preference === 1.0) {
-                    return d3.interpolate("#ff0000", "#ffff00")(i / (numSegments - 1));
+                    return d3.interpolate("#0000ff", "#ff0000")(i / (numSegments - 1));
                 } else if (preference === 0.0) {
-                    return d3.interpolate("#ffff00", "#ff0000")(i / (numSegments - 1));
+                    return d3.interpolate("#ff0000", "#0000ff")(i / (numSegments - 1));
                 } else {
-                    return "#ffa500";
+                    return "#7f007f";
                 }
             }
 
@@ -340,24 +340,24 @@ export default {
                 .attr("fill", d => {
                     if (!d.children) {
                         if (this.group1.some(node => node.id === d.data.id)) {
-                            return "blue";
+                            return "#ff00ff";
                         } else if (this.group2.some(node => node.id === d.data.id)) {
-                            return "orange";
+                            return "#ffff00";
                         } else {
-                            return "white";
+                            return "#ffffff";
                         }
                     } else {
                         const { group1Count, group2Count, noGroupCount } = this.countLeafDescendantsInGroups(d);
                         const totalCount = group1Count + group2Count + noGroupCount;
 
-                        const colorWhite = d3.rgb("white");
-                        const colorBlue = d3.rgb("blue");
-                        const colorOrange = d3.rgb("orange");
+                        const colorWhite = d3.rgb(255, 255, 255);
+                        const colorPink = d3.rgb(255, 0, 255);
+                        const colorYellow = d3.rgb(255, 255, 0);
 
                         return d3.rgb(
-                            (colorWhite.r * noGroupCount + colorBlue.r * group1Count + colorOrange.r * group2Count) / totalCount,
-                            (colorWhite.g * noGroupCount + colorBlue.g * group1Count + colorOrange.g * group2Count) / totalCount,
-                            (colorWhite.b * noGroupCount + colorBlue.b * group1Count + colorOrange.b * group2Count) / totalCount
+                            (colorWhite.r * noGroupCount + colorPink.r * group1Count + colorYellow.r * group2Count) / totalCount,
+                            (colorWhite.g * noGroupCount + colorPink.g * group1Count + colorYellow.g * group2Count) / totalCount,
+                            (colorWhite.b * noGroupCount + colorPink.b * group1Count + colorYellow.b * group2Count) / totalCount
                         );
                     }
                 })
@@ -462,11 +462,13 @@ export default {
         },
         handleEvent(event) {
             const currentEventId = JSON.parse(event.data);
+            console.log('Received event:', currentEventId);
             if (currentEventId === null || currentEventId === '') {
                 d3.select('#scatterPlot').select('svg').remove();
                 this.feedbackComplete();
             } else if (currentEventId !== this.lastEventId) {
                 this.lastEventId = currentEventId;
+                d3.select('#scatterPlot').select('svg').remove();
                 this.fetchData();
             }
         },
@@ -505,6 +507,7 @@ export default {
                         //console.log('Data received:', data);
                         this.suggestionData = data;
                         this.suggestionDataLoaded(this.suggestionData.length);
+                        this.svg = null;
                         this.createChart();
                         this.fragmentsReceived();
                     } else {
