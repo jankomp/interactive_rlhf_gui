@@ -66,6 +66,10 @@ export default {
         suggestionDataLoaded(totalNumberOfSuggestions) {
             this.$emit('suggestionDataLoaded', totalNumberOfSuggestions);
         },
+        deleteChart() {
+            this.svg = d3.select('svg').remove();
+            this.svg = null;
+        },
         async createChart() {
             if (this.fragmentData) {
                 const depth = d3.hierarchy(this.fragmentData).height;
@@ -464,11 +468,14 @@ export default {
             const currentEventId = JSON.parse(event.data);
             console.log('Received event:', currentEventId);
             if (currentEventId === null || currentEventId === '') {
-                d3.select('#scatterPlot').select('svg').remove();
+                this.deleteChart();
                 this.feedbackComplete();
             } else if (currentEventId !== this.lastEventId) {
                 this.lastEventId = currentEventId;
-                d3.select('#scatterPlot').select('svg').remove();
+                this.deleteChart();
+                this.suggestionData = [];
+                this.preferenceData = [];
+                this.fragmentData = [];
                 this.fetchData();
             }
         },
