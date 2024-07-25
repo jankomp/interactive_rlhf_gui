@@ -6,7 +6,7 @@
         @fragmentsReceived="handleVideoReceived" @feedbackComplete="handleInputSent" /> -->
       <div class="exploration-component">
         <RadialHierarchy ref="radialHierarchy" class="hierarchical-view" @group1Updated="handleGroup1Updated"
-          :chart-size="1000" @group2Updated="handleGroup2Updated" @fragmentsReceived="handleVideoReceived"
+          :chart-size="1000" @group2Updated="handleGroup2Updated" @fragmentsReceived="handleVideoReceived" @feedbackRoundStart="handleFeedbackRoundStart"
           @feedbackComplete="handleInputSent" @suggestionDataLoaded="handleSuggestionDataLoaded"
           :numberOfSuggestions="numberOfSuggestions" :beta="beta" />
         <SliderInput class="full-width-slider" :sliderValueName="'Number of Suggestions'" :scaleFactor="1"
@@ -22,14 +22,14 @@
     </div>
     <div class="pairwise-comparison" v-if="$feedback === 'pairwise'">
       <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @noVideoReceived="handleNoVideoReceived"
-        @changeBlockingMessage="handleChangeBlockingMessage" />
+        @changeBlockingMessage="handleChangeBlockingMessage" @feedbackRoundStart="handleFeedbackRoundStart"/>
       <KeyPad :isInputAllowed="isInputAllowed" @inputSent="handleInputSent"
         @feedbackCountUpdated="handleFeedbackCountUpdated" />
     </div>
     <div v-if="!isInputAllowed" class="overlay">
       <p>{{ blockingMessage }}</p>
     </div>
-    <FeedbackTimer class="timer" :isInputAllowed="isInputAllowed" @pauseTimerEvent="handlePauseTimer"
+    <FeedbackTimer class="timer" :feedbackTime="feedbackTime" @pauseTimerEvent="handlePauseTimer"
       @resumeTimerEvent="handleResumeTimer" />
     <FeedbackCounter ref="feedbackCounter" class="feedback-counter" :givenFeedbacks="feedbackCount" />
   </div>
@@ -61,6 +61,7 @@ export default {
   data() {
     return {
       isInputAllowed: false,
+      feedbackTime: false,
       blockingMessage: 'Waiting for videos...',
       feedbackCount: 0,
       group1: [],
@@ -138,8 +139,12 @@ export default {
     handleVideoReceived() {
       this.isInputAllowed = true;
     },
+    handleFeedbackRoundStart() {
+      this.feedbackTime = true;
+    },
     handleNoVideoReceived() {
       this.isInputAllowed = false;
+      this.feedbackTime = false;
     },
     handleChangeBlockingMessage(message) {
       if (this.feedbackCount !== this.$refs.feedbackCounter.totalFeedbacks) {

@@ -8,7 +8,7 @@
 <script>
 export default {
     name: 'FeedbackTimer',
-    props: ['isInputAllowed'],
+    props: ['feedbackTime'],
     data() {
         return {
             timer: null,
@@ -18,21 +18,35 @@ export default {
         };
     },
     methods: {
-        resumeTimer() {
+        async resumeTimer() {
             if (this.timer !== null) {
                 clearInterval(this.timer);
             }
-            this.startTime = Date.now() - this.timeElapsed;
-            this.timer = setInterval(() => {
-                this.timeElapsed = Date.now() - this.startTime;
-            }, 100);
-            this.resumeTimerEvent();
+
+            try {
+                const response = await fetch('http://localhost:5000/resume');
+                const data = await response.json();
+                this.timeElapsed = data.timeElapsed * 1000;
+                this.startTime = Date.now() - this.timeElapsed;
+               if (this.feedbackTime && !this.paused) {
+                    this.timer = setInterval(() => {
+                        this.timeElapsed = Date.now() - this.startTime;
+                    }, 100);
+                }
+                this.resumeTimerEvent();
+            } catch (error) {
+                console.error('Error:', error);
+            }
         },
-        pauseTimer() {
+        async pauseTimer() {
             clearInterval(this.timer);
             this.timer = null;
-            if (this.startTime !== null && this.startTime !== 0 && this.isInputAllowed) {
-                this.timeElapsed = Date.now() - this.startTime;
+            try {
+                const response = await fetch('http://localhost:5000/pause');
+                const data = await response.json();
+                this.timeElapsed = data.timeElapsed * 1000;
+            } catch (error) {
+                console.error('Error:', error);
             }
             if (this.paused) {
                 this.pauseTimerEvent();
@@ -52,9 +66,18 @@ export default {
                 this.resumeTimer();
             }
         },
+        async mounted() {
+            try {
+                const response = await fetch('http://localhost:5000/feedback_time');
+                const data = await response.json();
+                this.timeElapsed = data.timeElapsed * 1000;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        },
     },
     watch: {
-        isInputAllowed(newVal) {
+        feedbackTime(newVal) {
             if (newVal) {
                 this.resumeTimer();
             } else {

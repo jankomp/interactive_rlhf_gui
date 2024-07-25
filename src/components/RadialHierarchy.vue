@@ -66,6 +66,9 @@ export default {
         suggestionDataLoaded(totalNumberOfSuggestions) {
             this.$emit('suggestionDataLoaded', totalNumberOfSuggestions);
         },
+        feedbackRoundStart() {
+        this.$emit('feedbackRoundStart');
+        },
         deleteChart() {
             this.svg = d3.select('svg').remove();
             this.svg = null;
@@ -492,6 +495,7 @@ export default {
                         //console.log('Data received:', data);
                         this.fragmentData = data;
                         this.fetchSuggestionData();
+                        this.feedbackRoundStart();
                     } else {
                         console.log('No data received');
                         this.feedbackComplete();

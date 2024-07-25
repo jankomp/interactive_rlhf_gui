@@ -13,7 +13,7 @@ export default {
     return {
       video1: '',
       video2: '',
-      lastEventData: null,
+      lastEventData: ',',
       feedbackReceived: false,
       eventSource: null
     };
@@ -28,6 +28,9 @@ export default {
     },
     changeBlockingMessage(message) {
       this.$emit('changeBlockingMessage', message);
+    },
+    feedBackRoundStart() {
+      this.$emit('feedbackRoundStart');
     },
     handleEvent(event) {
       const videos = JSON.parse(event.data);
@@ -83,7 +86,14 @@ export default {
   },
   mounted() {
     this.resumeStream();
-  }
+  },
+  watch: {
+    lastEventData(newVal, oldVal) {
+      if (oldVal === ',' && newVal !== ',') {
+        this.feedBackRoundStart();
+      }
+    }
+  },
 };
 </script>
 
