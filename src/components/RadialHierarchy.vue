@@ -347,9 +347,9 @@ export default {
                 .attr("fill", d => {
                     if (!d.children) {
                         if (this.group1.some(node => node.id === d.data.id)) {
-                            return "#ff00ff";
+                            return "#bebada";
                         } else if (this.group2.some(node => node.id === d.data.id)) {
-                            return "#ffff00";
+                            return "#ffffb3";
                         } else {
                             return "#ffffff";
                         }
@@ -358,13 +358,13 @@ export default {
                         const totalCount = group1Count + group2Count + noGroupCount;
 
                         const colorWhite = d3.rgb(255, 255, 255);
-                        const colorPink = d3.rgb(255, 0, 255);
-                        const colorYellow = d3.rgb(255, 255, 0);
+                        const colorIliac = d3.rgb(190, 186, 218);
+                        const colorYellow = d3.rgb(255, 255, 179);
 
                         return d3.rgb(
-                            (colorWhite.r * noGroupCount + colorPink.r * group1Count + colorYellow.r * group2Count) / totalCount,
-                            (colorWhite.g * noGroupCount + colorPink.g * group1Count + colorYellow.g * group2Count) / totalCount,
-                            (colorWhite.b * noGroupCount + colorPink.b * group1Count + colorYellow.b * group2Count) / totalCount
+                            (colorWhite.r * noGroupCount + colorIliac.r * group1Count + colorYellow.r * group2Count) / totalCount,
+                            (colorWhite.g * noGroupCount + colorIliac.g * group1Count + colorYellow.g * group2Count) / totalCount,
+                            (colorWhite.b * noGroupCount + colorIliac.b * group1Count + colorYellow.b * group2Count) / totalCount
                         );
                     }
                 })

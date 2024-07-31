@@ -141,6 +141,7 @@ export default {
     },
     handleFeedbackRoundStart() {
       this.feedbackTime = true;
+      this.$refs.feedbackCounter.fetchRoundFeedbacks();
     },
     handleNoVideoReceived() {
       this.isInputAllowed = false;
