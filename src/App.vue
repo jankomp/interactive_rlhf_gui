@@ -6,9 +6,9 @@
         @fragmentsReceived="handleVideoReceived" @feedbackComplete="handleInputSent" /> -->
       <div class="exploration-component">
         <RadialHierarchy ref="radialHierarchy" class="hierarchical-view" @group1Updated="handleGroup1Updated"
-          :chart-size="1000" @group2Updated="handleGroup2Updated" @fragmentsReceived="handleVideoReceived" @feedbackRoundStart="handleFeedbackRoundStart"
-          @feedbackComplete="handleInputSent" @suggestionDataLoaded="handleSuggestionDataLoaded"
-          :numberOfSuggestions="numberOfSuggestions" :beta="beta" />
+          :chart-size="1000" @group2Updated="handleGroup2Updated" @fragmentsReceived="handleVideoReceived"
+          @feedbackRoundStart="handleFeedbackRoundStart" @feedbackComplete="handleInputSent"
+          @suggestionDataLoaded="handleSuggestionDataLoaded" :numberOfSuggestions="numberOfSuggestions" :beta="beta" />
         <SliderInput class="full-width-slider" :sliderValueName="'Number of Suggestions'" :scaleFactor="1"
           :minSliderValue="1" :maxSliderValue="totalNumberOfSuggestions" :initialValue="numberOfSuggestions"
           :logarithmic="true" @sliderValueChanged="handleNumberOfSuggestionsChange" />
@@ -16,13 +16,15 @@
           :minSliderValue="0.0" :maxSliderValue="0.99" :initialValue="0.85" :logarithmic="false"
           @sliderValueChanged="handleBetaChange" />
       </div>
-      <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo" :leftGroup="true" @changeGroups="handleChangeGroup1"/>
+      <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo"
+        :leftGroup="true" @changeGroups="handleChangeGroup1" />
       <GroupKeyPad @keyPressed="handleGroupKeyPressed" :isInputAllowed="isInputAllowed" />
-      <VideoGroupPlayer class="video-group-player" :videoGroup="group2" @removeVideo="handleGroup2RemoveVideo" :leftGroup="false" @changeGroups="handleChangeGroup2"/>
+      <VideoGroupPlayer class="video-group-player" :videoGroup="group2" @removeVideo="handleGroup2RemoveVideo"
+        :leftGroup="false" @changeGroups="handleChangeGroup2" />
     </div>
     <div class="pairwise-comparison" v-if="$feedback === 'pairwise'">
       <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @noVideoReceived="handleNoVideoReceived"
-        @changeBlockingMessage="handleChangeBlockingMessage" @feedbackRoundStart="handleFeedbackRoundStart"/>
+        @changeBlockingMessage="handleChangeBlockingMessage" @feedbackRoundStart="handleFeedbackRoundStart" />
       <KeyPad :isInputAllowed="isInputAllowed" @inputSent="handleInputSent"
         @feedbackCountUpdated="handleFeedbackCountUpdated" />
     </div>
@@ -189,6 +191,7 @@ export default {
     },
     handleSuggestionDataLoaded(newTotalNumberOfSuggestions) {
       this.totalNumberOfSuggestions = newTotalNumberOfSuggestions;
+      this.numberOfSuggestions = Math.round(this.totalNumberOfSuggestions * 0.1);
     },
     handleBetaChange(newBeta) {
       this.beta = newBeta;

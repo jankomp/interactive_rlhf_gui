@@ -61,6 +61,9 @@ export default {
     sliderValue(newVal) {
       this.$emit('sliderValueChanged', this.logarithmic ? this.expScale(newVal) : newVal / this.scaleFactor);
     },
+    initialValue(newVal) {
+      this.sliderValue = this.logarithmic ? this.logScale(newVal) : newVal * this.scaleFactor;
+    },
   }
 }
 </script>
