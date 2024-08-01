@@ -8,7 +8,8 @@
         <RadialHierarchy ref="radialHierarchy" class="hierarchical-view" @group1Updated="handleGroup1Updated"
           :chart-size="1000" @group2Updated="handleGroup2Updated" @fragmentsReceived="handleVideoReceived"
           @feedbackRoundStart="handleFeedbackRoundStart" @feedbackComplete="handleInputSent"
-          @suggestionDataLoaded="handleSuggestionDataLoaded" :numberOfSuggestions="numberOfSuggestions" :beta="beta" />
+          @suggestionDataLoaded="handleSuggestionDataLoaded" :numberOfSuggestions="numberOfSuggestions" :beta="beta" 
+          :hoveredVideo="hoveredVideo" />
         <SliderInput class="full-width-slider" :sliderValueName="'Number of Suggestions'" :scaleFactor="1"
           :minSliderValue="1" :maxSliderValue="totalNumberOfSuggestions" :initialValue="numberOfSuggestions"
           :logarithmic="true" @sliderValueChanged="handleNumberOfSuggestionsChange" />
@@ -17,10 +18,10 @@
           @sliderValueChanged="handleBetaChange" />
       </div>
       <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo"
-        :leftGroup="true" @changeGroups="handleChangeGroup1" />
+        :leftGroup="true" @changeGroups="handleChangeGroup1"  @videoHover="handleVideoHover" @videoUnHover="handleVideoUnHover"/>
       <GroupKeyPad @keyPressed="handleGroupKeyPressed" :isInputAllowed="isInputAllowed" />
       <VideoGroupPlayer class="video-group-player" :videoGroup="group2" @removeVideo="handleGroup2RemoveVideo"
-        :leftGroup="false" @changeGroups="handleChangeGroup2" />
+        :leftGroup="false" @changeGroups="handleChangeGroup2"  @videoHover="handleVideoHover" @videoUnHover="handleVideoUnHover"/>
     </div>
     <div class="pairwise-comparison" v-if="$feedback === 'pairwise'">
       <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @noVideoReceived="handleNoVideoReceived"
@@ -72,9 +73,16 @@ export default {
       numberOfSuggestions: 10,
       totalNumberOfSuggestions: 100,
       beta: 0.85,
+      hoveredVideo: null,
     }
   },
   methods: {
+    handleVideoHover(index) {
+      this.hoveredVideo = index;
+    },
+    handleVideoUnHover() {
+      this.hoveredVideo = null;
+    },
     updatePreferences(preference) {
       this.preferences = [];
       this.group1.forEach(point1 => {

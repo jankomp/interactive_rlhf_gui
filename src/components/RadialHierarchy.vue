@@ -19,7 +19,7 @@ import { Path2D } from "./HierarchicalEdgeBundling.js";
 
 export default {
     name: "RadialHierarchy",
-    props: ['chartSize', 'numberOfSuggestions', 'beta'],
+    props: ['chartSize', 'numberOfSuggestions', 'beta', 'hoveredVideo'],
     data() {
         return {
             fragmentData: null,
@@ -67,7 +67,7 @@ export default {
             this.$emit('suggestionDataLoaded', totalNumberOfSuggestions);
         },
         feedbackRoundStart() {
-        this.$emit('feedbackRoundStart');
+            this.$emit('feedbackRoundStart');
         },
         deleteChart() {
             this.svg = d3.select('svg').remove();
@@ -344,12 +344,21 @@ export default {
                 .outerRadius(d => d.y1);
 
             outerNode.append("path")
+                .attr("id", d => `node-${d.data.id}`)
                 .attr("fill", d => {
                     if (!d.children) {
                         if (this.group1.some(node => node.id === d.data.id)) {
-                            return "#bebada";
+                            if (d.data.id === this.hoveredVideo) {
+                                return d3.rgb("#bebada").darker(1); // Darken the color if the node is hovered
+                            } else {
+                                return "#bebada";
+                            }
                         } else if (this.group2.some(node => node.id === d.data.id)) {
-                            return "#ffffb3";
+                            if (d.data.id === this.hoveredVideo) {
+                                return d3.rgb("#ffffb3").darker(1); // Darken the color if the node is hovered
+                            } else {
+                                return "#ffffb3";
+                            }
                         } else {
                             return "#ffffff";
                         }
@@ -469,7 +478,7 @@ export default {
         },
         handleEvent(event) {
             const currentEventId = JSON.parse(event.data);
-            console.log('Received event:', currentEventId);
+            //console.log('Received event:', currentEventId);
             if (currentEventId === null || currentEventId === '') {
                 this.deleteChart();
                 this.feedbackComplete();
@@ -598,6 +607,9 @@ export default {
         },
         showPreferences() {
             this.drawPreferences();
+        },
+        hoveredVideo() {
+            this.createIcicleChart();
         },
     }
 };

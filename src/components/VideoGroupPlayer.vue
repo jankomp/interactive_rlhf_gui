@@ -2,12 +2,14 @@
     <div id="app" class="video-group">
         <div v-for="video in videoGroup" :key="video.id" class="video-container">
             <button class="close-button" @click="removeVideo(video.id)" title="Remove fragment">x</button>
-            <button class="group-change-button" :class="{ 'right-arrow': leftGroup, 'left-arrow': !leftGroup }" @click="changeGroups(video)" title="Switch groups">
+            <button class="group-change-button" :class="{ 'right-arrow': leftGroup, 'left-arrow': !leftGroup }"
+                @click="changeGroups(video)" title="Switch groups">
                 <span v-if="leftGroup">&gt;</span>
                 <span v-else>&lt;</span>
             </button>
             <video ref="video" :src="getVideoUrl(video.video_path)" width="300" @ended="waitAndLoop"
-                @loadedmetadata="setPlaybackRate" @error="handleVideoError" autoplay muted></video>
+                @loadedmetadata="setPlaybackRate" @error="handleVideoError" autoplay muted
+                @mouseover="handleMouseOver(video.id)" @mouseout="handleMouseOut()"></video>
         </div>
     </div>
 </template>
@@ -53,6 +55,12 @@ export default {
         },
         changeGroups(video) {
             this.$emit('changeGroups', video);
+        },
+        handleMouseOver(index) {
+            this.$emit('videoHover', index);
+        },
+        handleMouseOut() {
+            this.$emit('videoHover', null);
         },
     }
 };
