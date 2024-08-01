@@ -31,6 +31,7 @@ export default {
             height: this.chartSize,
             root: null,
             svg: null,
+            newOuterNode: null,
             startRadius: null,
             innerRadius: null,
             outerRadius: null,
@@ -321,8 +322,11 @@ export default {
             const outerDescendants = outerRoot.descendants().filter(d => d.depth > 0);
 
             const outerNode = this.svg.selectAll(".outerNode")
-                .data(outerDescendants)
-                .enter().append("g")
+                .data(outerDescendants, d => d.data.id);
+
+
+            // Enter
+            this.newOuterNode = outerNode.enter().append("g")
                 .on("mousedown", (event, d) => {
                     if (event.button === 0) {
                         this.handleNodeClick(d, 'group1', event.ctrlKey);
@@ -343,8 +347,13 @@ export default {
                 .innerRadius(d => d.y0)
                 .outerRadius(d => d.y1);
 
-            outerNode.append("path")
+            this.newOuterNode.append("path")
                 .attr("id", d => `node-${d.data.id}`)
+                .attr("opacity", 1)
+                .attr("stroke", "black");
+
+            // Update + Enter
+            outerNode.merge(this.newOuterNode).select("path")
                 .attr("fill", d => {
                     if (!d.children) {
                         if (this.group1.some(node => node.id === d.data.id)) {
@@ -377,9 +386,10 @@ export default {
                         );
                     }
                 })
-                .attr("opacity", 1)
-                .attr("stroke", "black")
                 .attr("d", arc);
+
+            // Exit
+            outerNode.exit().remove();
         },
         countLeafDescendantsInGroups(node) {
             const allDescendants = node.descendants();
@@ -608,8 +618,29 @@ export default {
         showPreferences() {
             this.drawPreferences();
         },
-        hoveredVideo() {
-            this.createIcicleChart();
+        hoveredVideo(newVal, oldVal) {
+            if (oldVal !== null) {
+                // Update the fill color of the unhovered nodeconst oldPath = this.svg.select(`#node-${oldVal}`).select('path');
+                const oldPath = this.newOuterNode.select(`#node-${oldVal}`);
+                console.log(oldPath.node());
+                oldPath.attr('fill', d => {
+                    if (d && d.data && (this.group1.some(node => node.id === d.data.id) || this.group2.some(node => node.id === d.data.id))) {
+                        const color = this.group1.some(node => node.id === d.data.id) ? "#bebada" : "#ffffb3";
+                        return color;
+                    }
+                });
+            }
+            if (newVal !== null) {
+                // Update the fill color of the hovered node
+                const newPath = this.newOuterNode.select(`#node-${newVal}`);
+                console.log(newPath.node());
+                newPath.attr('fill', d => {
+                    if (d && d.data && (this.group1.some(node => node.id === d.data.id) || this.group2.some(node => node.id === d.data.id))) {
+                        const color = d3.rgb(this.group1.some(node => node.id === d.data.id) ? "#bebada" : "#ffffb3").darker(1).toString();
+                        return color;
+                    }
+                });
+            }
         },
     }
 };
