@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div ref="chartContainer"></div>
+        <div ref="chartContainer" class="chart-container"></div>
         <div>
             <input type="checkbox" id="suggestionsToggle" v-model="showSuggestions">
             <label for="suggestionsToggle">Show Suggestions</label>
@@ -647,6 +647,10 @@ export default {
 </script>
 
 <style scoped>
+.chart-container {
+  min-width: 75vh;
+  min-height: 75vh;
+}
 .link {
     fill: none;
     stroke: #555;

@@ -7,7 +7,7 @@
       <div class="exploration-component">
         <RadialHierarchy ref="radialHierarchy" class="hierarchical-view" @group1Updated="handleGroup1Updated"
           :chart-size="1000" @group2Updated="handleGroup2Updated" @fragmentsReceived="handleVideoReceived"
-          @feedbackRoundStart="handleFeedbackRoundStart" @feedbackComplete="handleInputSent"
+          @feedbackRoundStart="handleFeedbackRoundStart" @feedbackComplete="handleNoVideoReceived"
           @suggestionDataLoaded="handleSuggestionDataLoaded" :numberOfSuggestions="numberOfSuggestions" :beta="beta" 
           :hoveredVideo="hoveredVideo" />
         <SliderInput class="full-width-slider" :sliderValueName="'Number of Suggestions'" :scaleFactor="1"
@@ -152,8 +152,12 @@ export default {
     handleFeedbackRoundStart() {
       this.feedbackTime = true;
       this.$refs.feedbackCounter.fetchRoundFeedbacks();
+      if (this.$refs.radialHierarchy) {
+        this.$refs.radialHierarchy.resumeStream();
+      }
     },
     handleNoVideoReceived() {
+      this.preferences = [];
       this.isInputAllowed = false;
       this.feedbackTime = false;
     },
