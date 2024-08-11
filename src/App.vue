@@ -8,7 +8,7 @@
         <RadialHierarchy ref="radialHierarchy" class="hierarchical-view" @group1Updated="handleGroup1Updated"
           :chart-size="1000" @group2Updated="handleGroup2Updated" @fragmentsReceived="handleVideoReceived"
           @feedbackRoundStart="handleFeedbackRoundStart" @feedbackComplete="handleNoVideoReceived"
-          @suggestionDataLoaded="handleSuggestionDataLoaded" :numberOfSuggestions="numberOfSuggestions" :beta="beta" 
+          @suggestionDataLoaded="handleSuggestionDataLoaded" :numberOfSuggestions="numberOfSuggestions" :beta="beta"
           :hoveredVideo="hoveredVideo" />
         <SliderInput class="full-width-slider" :sliderValueName="'Number of Suggestions'" :scaleFactor="1"
           :minSliderValue="1" :maxSliderValue="totalNumberOfSuggestions" :initialValue="numberOfSuggestions"
@@ -18,10 +18,12 @@
           @sliderValueChanged="handleBetaChange" />
       </div>
       <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo"
-        :leftGroup="true" @changeGroups="handleChangeGroup1"  @videoHover="handleVideoHover" @videoUnHover="handleVideoUnHover"/>
+        :leftGroup="true" @changeGroups="handleChangeGroup1" @videoHover="handleVideoHover"
+        @videoUnHover="handleVideoUnHover" />
       <GroupKeyPad @keyPressed="handleGroupKeyPressed" :isInputAllowed="isInputAllowed" />
       <VideoGroupPlayer class="video-group-player" :videoGroup="group2" @removeVideo="handleGroup2RemoveVideo"
-        :leftGroup="false" @changeGroups="handleChangeGroup2"  @videoHover="handleVideoHover" @videoUnHover="handleVideoUnHover"/>
+        :leftGroup="false" @changeGroups="handleChangeGroup2" @videoHover="handleVideoHover"
+        @videoUnHover="handleVideoUnHover" />
     </div>
     <div class="pairwise-comparison" v-if="$feedback === 'pairwise'">
       <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @noVideoReceived="handleNoVideoReceived"
@@ -83,19 +85,6 @@ export default {
     handleVideoUnHover() {
       this.hoveredVideo = null;
     },
-    updatePreferences(preference) {
-      this.preferences = [];
-      this.group1.forEach(point1 => {
-        this.group2.forEach(point2 => {
-          this.preferences.push({
-            id1: point1.id,
-            id2: point2.id,
-            preference: preference,
-          });
-        });
-      });
-      this.$refs.radialHierarchy.updatePreferences(this.preferences);
-    },
     handleGroupKeyPressed(key) {
       if (!this.isInputAllowed || this.group1.length === 0 || this.group2.length === 0) {
         return;
@@ -108,8 +97,19 @@ export default {
 
       axios.post('http://localhost:5000/preference', data)
         .then(response => {
-          this.updatePreferences(key == 'ArrowLeft' ? 1.0 : (key == 'ArrowRight' ? 0.0 : 0.5));
+          const responseData = response.data;
           this.feedbackCount = response.data.feedback_count;
+          // Update preferences based on the response data
+          this.preferences = responseData.new_fragment_pairs.map((pair, index) => {
+            return {
+              id1: pair[0],
+              id2: pair[1],
+              preference: responseData.new_preferences[index],
+            };
+          });
+
+          this.$refs.radialHierarchy.updatePreferences(this.preferences);
+
           this.group1 = [];
           this.group2 = [];
           this.$refs.radialHierarchy.setGroup1([]);
