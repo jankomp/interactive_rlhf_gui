@@ -1,6 +1,6 @@
 <template>
   <div class="feedback-counter">
-    {{ givenFeedbacks }} / {{ roundFeedbacks }} total: {{ totalFeedbacks }}
+    Given Feedbacks: {{ givenFeedbacks }} <!--  total: {{ totalFeedbacks }} -->
   </div>
 </template>
 
@@ -11,25 +11,17 @@ export default {
     givenFeedbacks: {
       type: Number,
       required: true
-    }
+    },
   },
   data() {
     return {
       totalFeedbacks: 0,
-      roundFeedbacks: 0
     }
   },
   methods: {
-    fetchRoundFeedbacks() {
-      fetch('http://localhost:5000/round_feedbacks')
-        .then(response => response.json())
-        .then(data => {
-          this.roundFeedbacks = data.round_feedbacks;
-        });
-    }
+
   },
   mounted() {
-    this.fetchRoundFeedbacks();
     fetch('http://localhost:5000/total_feedbacks')
       .then(response => response.json())
       .then(data => {
@@ -44,6 +36,4 @@ export default {
 }
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

@@ -151,7 +151,6 @@ export default {
     },
     handleFeedbackRoundStart() {
       this.feedbackTime = true;
-      this.$refs.feedbackCounter.fetchRoundFeedbacks();
       if (this.$refs.radialHierarchy) {
         this.$refs.radialHierarchy.resumeStream();
       }
