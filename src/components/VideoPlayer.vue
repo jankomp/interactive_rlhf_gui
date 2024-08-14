@@ -1,9 +1,7 @@
 <template>
   <div id="app" style="display: flex; justify-content: center; gap: 20px;">
-    <video ref="video1" controls :src="video1" width="400" @ended="waitAndLoop" @loadedmetadata="setPlaybackRate" autoplay
-      muted></video>
-    <video ref="video2" controls :src="video2" width="400" @ended="waitAndLoop" @loadedmetadata="setPlaybackRate" autoplay
-      muted></video>
+    <video ref="video1" :src="video1" width="400" @ended="waitAndLoop" @loadedmetadata="setPlaybackRate" autoplay muted></video>
+    <video ref="video2" :src="video2" width="400" @ended="waitAndLoop" @loadedmetadata="setPlaybackRate" autoplay muted></video>
   </div>
 </template>
 

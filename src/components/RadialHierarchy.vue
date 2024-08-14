@@ -515,6 +515,7 @@ export default {
                         this.fragmentData = data;
                         this.fetchSuggestionData();
                         this.feedbackRoundStart();
+                        this.fetchNextQuery();
                     } else {
                         console.log('No data received');
                         this.feedbackComplete();
@@ -578,6 +579,31 @@ export default {
             }
             this.preferenceData = this.preferenceData.concat(newPreferences);
             this.drawPreferences();
+            this.fetchNextQuery();
+        },
+        fetchNextQuery() {
+            fetch('http://localhost:5000/next_query')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data) {
+                        console.log('Query received:', data);
+                        const nextQuery = data;
+                        const node1 = this.descendants.find(node => node.data.id === nextQuery.id1);
+                        const node2 = this.descendants.find(node => node.data.id === nextQuery.id2);
+                        this.handleNodeClick(node1, 'group1', false);
+                        this.handleNodeClick(node2, 'group2', false);
+                    } else {
+                        console.log('No data received');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
         },
     },
 
