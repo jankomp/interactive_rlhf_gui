@@ -9,7 +9,7 @@
           :chart-size="1000" @group2Updated="handleGroup2Updated" @fragmentsReceived="handleVideoReceived"
           @feedbackRoundStart="handleFeedbackRoundStart" @feedbackComplete="handleNoVideoReceived"
           @suggestionDataLoaded="handleSuggestionDataLoaded" :numberOfSuggestions="numberOfSuggestions" :beta="beta"
-          :hoveredVideo="hoveredVideo" />
+          :hoveredVideo="hoveredVideo" @loadingProgress="setLoadingProgress"/>
         <SliderInput class="full-width-slider" :sliderValueName="'Number of Suggestions'" :scaleFactor="1"
           :minSliderValue="1" :maxSliderValue="totalNumberOfSuggestions" :initialValue="numberOfSuggestions"
           :logarithmic="true" @sliderValueChanged="handleNumberOfSuggestionsChange" />
@@ -27,7 +27,7 @@
     </div>
     <div class="pairwise-comparison" v-if="$feedback === 'pairwise'">
       <VideoPlayer ref="videoPlayer" @videoReceived="handleVideoReceived" @noVideoReceived="handleNoVideoReceived"
-        @changeBlockingMessage="handleChangeBlockingMessage" @feedbackRoundStart="handleFeedbackRoundStart" />
+        @changeBlockingMessage="handleChangeBlockingMessage" @feedbackRoundStart="handleFeedbackRoundStart" @loadingProgress="setLoadingProgress"/>
       <KeyPad :isInputAllowed="isInputAllowed" @inputSent="handleInputSent"
         @feedbackCountUpdated="handleFeedbackCountUpdated" />
     </div>
@@ -84,6 +84,9 @@ export default {
     },
     handleVideoUnHover() {
       this.hoveredVideo = null;
+    },
+    setLoadingProgress(progress) {
+        this.blockingMessage = `Retraining and generating videos. Progress: ${progress*100}%`;
     },
     handleGroupKeyPressed(key) {
       if (!this.isInputAllowed || this.group1.length === 0 || this.group2.length === 0) {

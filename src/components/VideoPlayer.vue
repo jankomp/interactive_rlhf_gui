@@ -31,8 +31,11 @@ export default {
       this.$emit('feedbackRoundStart');
     },
     handleEvent(event) {
-      const videos = JSON.parse(event.data);
+      const eventData = JSON.parse(event.data);
+      const videos = eventData.videos;
+      const progress = eventData.progress;
       if (videos === null) {
+        this.$emit('loadingProgress', progress);
         return;
       }
       if (videos.toString() !== this.lastEventData) {
@@ -44,11 +47,13 @@ export default {
           this.receiveVideo();
         } else {
           this.changeBlockingMessage('Please wait while we generate new behaviors...');
+          this.$emit('loadingProgress', progress);
         }
       } else {
         if (videos[0] === "" && videos[1] === "") {
           this.changeBlockingMessage('Please wait while we generate new behaviors...');
           this.noVideoReceived();
+          this.$emit('loadingProgress', progress);
         }
       }
     },

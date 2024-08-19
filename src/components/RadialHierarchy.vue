@@ -487,11 +487,14 @@ export default {
             this.$emit('feedbackComplete');
         },
         handleEvent(event) {
-            const currentEventId = JSON.parse(event.data);
+            const eventData = JSON.parse(event.data);
+            const currentEventId = eventData.current_fragments_hash;
+            const progress = eventData.progress;
             //console.log('Received event:', currentEventId);
             if (currentEventId === null || currentEventId === '') {
                 this.deleteChart();
                 this.feedbackComplete();
+                this.$emit('loadingProgress', progress);
             } else if (currentEventId !== this.lastEventId) {
                 this.lastEventId = currentEventId;
                 this.deleteChart();
@@ -674,9 +677,10 @@ export default {
 
 <style scoped>
 .chart-container {
-  min-width: 75vh;
-  min-height: 75vh;
+    min-width: 75vh;
+    min-height: 75vh;
 }
+
 .link {
     fill: none;
     stroke: #555;
