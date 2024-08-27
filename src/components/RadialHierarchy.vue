@@ -1,6 +1,8 @@
 <template>
     <div>
         <div ref="chartContainer" class="chart-container"></div>
+        <VisualizationLegend />
+        <br>
         <div>
             <input type="checkbox" id="suggestionsToggle" v-model="showSuggestions">
             <label for="suggestionsToggle">Show Suggestions</label>
@@ -16,10 +18,14 @@
 
 import * as d3 from "d3";
 import { Path2D } from "./HierarchicalEdgeBundling.js";
+import VisualizationLegend from "./VisualizationLegend.vue";
 
 export default {
     name: "RadialHierarchy",
     props: ['chartSize', 'numberOfSuggestions', 'beta', 'hoveredVideo'],
+    components: {
+        VisualizationLegend
+    },
     data() {
         return {
             fragmentData: null,
@@ -544,6 +550,9 @@ export default {
                         this.svg = null;
                         this.createChart();
                         this.fragmentsReceived();
+                        setTimeout(() => {
+                            this.drawSuggestions();
+                        }, 3000);
                     } else {
                         console.log('No data received');
                     }

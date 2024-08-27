@@ -10,12 +10,12 @@
           @feedbackRoundStart="handleFeedbackRoundStart" @feedbackComplete="handleNoVideoReceived"
           @suggestionDataLoaded="handleSuggestionDataLoaded" :numberOfSuggestions="numberOfSuggestions" :beta="beta"
           :hoveredVideo="hoveredVideo" @loadingProgress="setLoadingProgress"/>
-        <SliderInput class="full-width-slider" :sliderValueName="'Number of Suggestions'" :scaleFactor="1"
+        <!-- <SliderInput class="full-width-slider" :sliderValueName="'Number of Suggestions'" :scaleFactor="1"
           :minSliderValue="1" :maxSliderValue="totalNumberOfSuggestions" :initialValue="numberOfSuggestions"
           :logarithmic="true" @sliderValueChanged="handleNumberOfSuggestionsChange" />
         <SliderInput class="full-width-slider" :sliderValueName="'Beta (Bundling strength)'" :scaleFactor="100"
           :minSliderValue="0.0" :maxSliderValue="0.99" :initialValue="0.85" :logarithmic="false"
-          @sliderValueChanged="handleBetaChange" />
+          @sliderValueChanged="handleBetaChange" /> -->
       </div>
       <VideoGroupPlayer class="video-group-player" :videoGroup="group1" @removeVideo="handleGroup1RemoveVideo"
         :leftGroup="true" @changeGroups="handleChangeGroup1" @videoHover="handleVideoHover"
@@ -42,7 +42,7 @@
 
 <script>
 import RadialHierarchy from './components/RadialHierarchy.vue'
-import SliderInput from './components/SliderInput.vue'
+// import SliderInput from './components/SliderInput.vue'
 import GroupKeyPad from './components/GroupKeyPad.vue'
 import VideoGroupPlayer from './components/VideoGroupPlayer.vue'
 import KeyPad from './components/KeyPad.vue'
@@ -55,7 +55,7 @@ export default {
   name: 'App',
   components: {
     RadialHierarchy,
-    SliderInput,
+    // SliderInput,
     GroupKeyPad,
     VideoGroupPlayer,
     KeyPad,
