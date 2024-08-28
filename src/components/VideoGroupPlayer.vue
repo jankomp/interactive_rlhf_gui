@@ -1,5 +1,5 @@
 <template>
-    <div id="app" class="video-group">
+    <div id="app" class="video-group" :class="{ 'left-group': leftGroup }">
         <div v-for="video in videoGroup" :key="video.id" class="video-container">
             <button class="close-button" @click="removeVideo(video.id)" title="Remove fragment">x</button>
             <button class="group-change-button" :class="{ 'right-arrow': leftGroup, 'left-arrow': !leftGroup }"
@@ -75,6 +75,11 @@ export default {
     align-content: start;
     max-height: 100vh;
     overflow-y: auto;
+    direction: ltr;
+}
+
+.left-group {
+    direction: rtl ;
 }
 
 .video-container {
