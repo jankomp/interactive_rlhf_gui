@@ -4,8 +4,7 @@
             <button class="close-button" @click="removeVideo(video.id)" title="Remove fragment">x</button>
             <button class="group-change-button" :class="{ 'right-arrow': leftGroup, 'left-arrow': !leftGroup }"
                 @click="changeGroups(video)" title="Switch groups">
-                <span v-if="leftGroup">&gt;</span>
-                <span v-else>&lt;</span>
+                <span>&lt;</span>
             </button>
             <video ref="video" :src="getVideoUrl(video.video_path)" width="300" @ended="waitAndLoop"
                 @loadedmetadata="setPlaybackRate" @error="handleVideoError" autoplay muted
